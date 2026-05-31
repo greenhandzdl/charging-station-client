@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../user_screens/payment_screen.dart';
+import '../user_screens/payment_entry_screen.dart';
 import '../user_screens/repair_screen.dart';
+import '../user_screens/charger_status_screen.dart';
 import '../user_screens/login_screen.dart';
 import '../admin_screens/admin_dashboard_screen.dart';
 
@@ -64,6 +66,34 @@ class ProfileScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const PaymentScreen()),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.receipt_long),
+              title: const Text('支付记录'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const PaymentEntryScreen()),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.search),
+              title: const Text('充电桩状态查询'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ChargerStatusScreen()),
                 );
               },
             ),

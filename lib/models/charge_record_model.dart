@@ -6,10 +6,10 @@ class ChargeRecordModel {
   final double fee;
   final String status;
   final String deductionStatus;
-  final String userName;
-  final String plateNumber;
-  final String chargerCode;
-  final String stationName;
+  final String? userName;
+  final String? plateNumber;
+  final String? chargerCode;
+  final String? stationName;
 
   ChargeRecordModel({
     required this.id,
@@ -19,10 +19,10 @@ class ChargeRecordModel {
     required this.fee,
     required this.status,
     required this.deductionStatus,
-    required this.userName,
-    required this.plateNumber,
-    required this.chargerCode,
-    required this.stationName,
+    this.userName,
+    this.plateNumber,
+    this.chargerCode,
+    this.stationName,
   });
 
   factory ChargeRecordModel.fromJson(Map<String, dynamic> json) {
@@ -43,17 +43,13 @@ class ChargeRecordModel {
           json['deduction_status'] as String? ??
           'pending',
       userName: json['userName'] as String? ??
-          json['user_name'] as String? ??
-          '',
+          json['user_name'] as String?,
       plateNumber: json['plateNumber'] as String? ??
-          json['plate_number'] as String? ??
-          '',
+          json['plate_number'] as String?,
       chargerCode: json['chargerCode'] as String? ??
-          json['charger_code'] as String? ??
-          '',
+          json['charger_code'] as String?,
       stationName: json['stationName'] as String? ??
-          json['station_name'] as String? ??
-          '',
+          json['station_name'] as String?,
     );
   }
 
@@ -66,10 +62,10 @@ class ChargeRecordModel {
       'fee': fee,
       'status': status,
       'deductionStatus': deductionStatus,
-      'userName': userName,
-      'plateNumber': plateNumber,
-      'chargerCode': chargerCode,
-      'stationName': stationName,
+      if (userName != null) 'userName': userName,
+      if (plateNumber != null) 'plateNumber': plateNumber,
+      if (chargerCode != null) 'chargerCode': chargerCode,
+      if (stationName != null) 'stationName': stationName,
     };
   }
 }

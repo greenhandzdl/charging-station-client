@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/repair_provider.dart';
+import '../../models/charger_model.dart';
+import '../../services/api_service.dart';
 
 class RepairScreen extends StatefulWidget {
   const RepairScreen({super.key});
@@ -11,37 +13,65 @@ class RepairScreen extends StatefulWidget {
 
 class _RepairScreenState extends State<RepairScreen> {
   final _descriptionController = TextEditingController();
-  final _chargerCodeController = TextEditingController();
+  List<ChargerModel> _chargers = [];
+  ChargerModel? _selectedCharger;
 
   @override
   void initState() {
     super.initState();
     context.read<RepairProvider>().fetchRepairs();
+    _loadChargers();
   }
 
   @override
   void dispose() {
     _descriptionController.dispose();
-    _chargerCodeController.dispose();
     super.dispose();
   }
 
+  Future<void> _loadChargers() async {
+    try {
+      // Fetch chargers across stations; for simplicity get all stations then their chargers
+      final stations = await ApiService.getStations();
+      final allChargers = <ChargerModel>[];
+      for (final station in stations) {
+        try {
+          final chargers = await ApiService.getChargers(station.id);
+          allChargers.addAll(chargers);
+        } catch (_) {
+          // skip stations that fail
+        }
+      }
+      if (mounted) {
+        setState(() => _chargers = allChargers);
+      }
+    } catch (_) {
+      // fail silently; user will see an empty dropdown
+    }
+  }
+
   Future<void> _submitRepair() async {
-    final chargerCode = _chargerCodeController.text.trim();
-    final description = _descriptionController.text.trim();
-    if (chargerCode.isEmpty || description.isEmpty) {
+    if (_selectedCharger == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请填写完整信息')),
+        const SnackBar(content: Text('请选择充电桩')),
+      );
+      return;
+    }
+    final description = _descriptionController.text.trim();
+    if (description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请填写故障描述')),
       );
       return;
     }
     try {
       await context
           .read<RepairProvider>()
-          .submitRepair(chargerCode, description);
-      _chargerCodeController.clear();
+          .submitRepair(_selectedCharger!.id, description);
+      _selectedCharger = null;
       _descriptionController.clear();
       if (mounted) {
+        setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('报修已提交')),
         );
@@ -66,12 +96,19 @@ class _RepairScreenState extends State<RepairScreen> {
           const Text('提交报修',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          TextField(
-            controller: _chargerCodeController,
+          DropdownButtonFormField<ChargerModel>(
             decoration: const InputDecoration(
-              labelText: '充电桩编号',
+              labelText: '选择充电桩',
               border: OutlineInputBorder(),
             ),
+            initialValue: _selectedCharger,
+            items: _chargers
+                .map((c) => DropdownMenuItem(
+                      value: c,
+                      child: Text('${c.chargerCode} (${c.stationName ?? ""})'),
+                    ))
+                .toList(),
+            onChanged: (c) => setState(() => _selectedCharger = c),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -96,7 +133,7 @@ class _RepairScreenState extends State<RepairScreen> {
           else
             ...provider.repairs.map((r) => Card(
                   child: ListTile(
-                    title: Text(r.chargerCode),
+                    title: Text(r.chargerCode ?? ''),
                     subtitle: Text(
                         '${r.description}\n${r.status} | ${r.reportedAt}'),
                     isThreeLine: true,

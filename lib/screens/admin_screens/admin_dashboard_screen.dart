@@ -14,7 +14,8 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final isSuperAdmin = auth.currentUser?.role == 'SUPER_ADMIN';
+    final isAdmin = auth.currentUser?.role == 'SUPER_ADMIN' ||
+        auth.currentUser?.role == 'ADMIN';
 
     return Scaffold(
       appBar: AppBar(
@@ -81,7 +82,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   builder: (_) => const RepairManagementScreen()),
             ),
           ),
-          if (isSuperAdmin)
+          if (isAdmin)
             _buildMenuItem(
               context,
               icon: Icons.bar_chart,
