@@ -5,7 +5,6 @@ import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FlutterSecureStorage? _secureStorage;
-  bool _storageAvailable = true;
 
   AuthProvider() : _secureStorage = _initStorage();
 
@@ -90,34 +89,33 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _persistTokens() async {
     if (_secureStorage == null) return;
     try {
+      final storage = _secureStorage;
       if (_accessToken != null) {
-        await _secureStorage!.write(key: 'access_token', value: _accessToken);
+        await storage.write(key: 'access_token', value: _accessToken);
       }
       if (_refreshToken != null) {
-        await _secureStorage!.write(key: 'refresh_token', value: _refreshToken);
+        await storage.write(key: 'refresh_token', value: _refreshToken);
       }
-    } catch (_) {
-      _storageAvailable = false;
-    }
+    } catch (_) {}
   }
 
   Future<void> _clearPersistedTokens() async {
     if (_secureStorage == null) return;
     try {
-      await _secureStorage!.delete(key: 'access_token');
-      await _secureStorage!.delete(key: 'refresh_token');
-    } catch (_) {
-      _storageAvailable = false;
-    }
+      final storage = _secureStorage;
+      await storage.delete(key: 'access_token');
+      await storage.delete(key: 'refresh_token');
+    } catch (_) {}
   }
 
   Future<bool> tryAutoLogin() async {
     if (_secureStorage == null) return false;
     try {
+      final storage = _secureStorage;
       final accessToken =
-          await _secureStorage!.read(key: 'access_token');
+          await storage.read(key: 'access_token');
       final refreshToken =
-          await _secureStorage!.read(key: 'refresh_token');
+          await storage.read(key: 'refresh_token');
       if (accessToken == null || refreshToken == null) {
         return false;
       }
@@ -131,7 +129,6 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
     } catch (_) {
-      _storageAvailable = false;
       return false;
     }
   }
