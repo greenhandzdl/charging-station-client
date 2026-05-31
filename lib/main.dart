@@ -55,8 +55,13 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _checkAuth() async {
     final auth = context.read<AuthProvider>();
-    await auth.tryAutoLogin();
-    setState(() => _initialized = true);
+    try {
+      await auth.tryAutoLogin();
+    } catch (_) {
+      // Ignore — fall through to login screen
+    } finally {
+      if (mounted) setState(() => _initialized = true);
+    }
   }
 
   @override

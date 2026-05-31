@@ -4,7 +4,18 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FlutterSecureStorage? _secureStorage;
+  bool _storageAvailable = true;
+
+  AuthProvider() : _secureStorage = _initStorage();
+
+  static FlutterSecureStorage? _initStorage() {
+    try {
+      return const FlutterSecureStorage();
+    } catch (_) {
+      return null;
+    }
+  }
 
   String? _accessToken;
   String? _refreshToken;
@@ -77,34 +88,50 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _persistTokens() async {
-    if (_accessToken != null) {
-      await _secureStorage.write(key: 'access_token', value: _accessToken);
-    }
-    if (_refreshToken != null) {
-      await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+    if (_secureStorage == null) return;
+    try {
+      if (_accessToken != null) {
+        await _secureStorage!.write(key: 'access_token', value: _accessToken);
+      }
+      if (_refreshToken != null) {
+        await _secureStorage!.write(key: 'refresh_token', value: _refreshToken);
+      }
+    } catch (_) {
+      _storageAvailable = false;
     }
   }
 
   Future<void> _clearPersistedTokens() async {
-    await _secureStorage.delete(key: 'access_token');
-    await _secureStorage.delete(key: 'refresh_token');
+    if (_secureStorage == null) return;
+    try {
+      await _secureStorage!.delete(key: 'access_token');
+      await _secureStorage!.delete(key: 'refresh_token');
+    } catch (_) {
+      _storageAvailable = false;
+    }
   }
 
   Future<bool> tryAutoLogin() async {
-    final accessToken =
-        await _secureStorage.read(key: 'access_token');
-    final refreshToken =
-        await _secureStorage.read(key: 'refresh_token');
-    if (accessToken == null || refreshToken == null) {
-      return false;
-    }
-    _accessToken = accessToken;
-    _refreshToken = refreshToken;
-    ApiService.setAccessToken(_accessToken);
+    if (_secureStorage == null) return false;
     try {
-      final success = await refreshAccessToken();
-      return success;
+      final accessToken =
+          await _secureStorage!.read(key: 'access_token');
+      final refreshToken =
+          await _secureStorage!.read(key: 'refresh_token');
+      if (accessToken == null || refreshToken == null) {
+        return false;
+      }
+      _accessToken = accessToken;
+      _refreshToken = refreshToken;
+      ApiService.setAccessToken(_accessToken);
+      try {
+        final success = await refreshAccessToken();
+        return success;
+      } catch (_) {
+        return false;
+      }
     } catch (_) {
+      _storageAvailable = false;
       return false;
     }
   }
