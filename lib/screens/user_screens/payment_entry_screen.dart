@@ -141,19 +141,6 @@ class _PaymentEntryScreenState extends State<PaymentEntryScreen> {
     }
   }
 
-  String _methodIcon(String method) {
-    switch (method) {
-      case 'wechat':
-        return '';
-      case 'alipay':
-        return '';
-      case 'balance':
-        return '';
-      default:
-        return method;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
