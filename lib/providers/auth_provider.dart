@@ -109,6 +109,25 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<void> refreshBalance() async {
+    try {
+      final balance = await ApiService.getBalance();
+      if (_currentUser != null) {
+        _currentUser = UserModel(
+          id: _currentUser!.id,
+          name: _currentUser!.name,
+          phone: _currentUser!.phone,
+          plateNumber: _currentUser!.plateNumber,
+          role: _currentUser!.role,
+          balance: balance,
+        );
+        notifyListeners();
+      }
+    } catch (_) {
+      // Non-fatal: balance refresh failure should not block UI
+    }
+  }
+
   Future<bool> tryAutoLogin() async {
     if (_prefs == null) return false;
     try {

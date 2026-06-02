@@ -18,13 +18,12 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
   }
 
   Future<void> _handleAction(
-      String repairId, RepairAction action, {String? reason}) async {
+      String repairId, RepairAction action, {String? reason, String? maintainerId}) async {
     try {
       final provider = context.read<RepairProvider>();
       switch (action) {
         case RepairAction.assign:
-          // In a real app, show user picker
-          await provider.assignRepair(repairId, 'maintainer-id');
+          await provider.assignRepair(repairId, maintainerId ?? '');
         case RepairAction.resolve:
           await provider.resolveRepair(repairId);
         case RepairAction.close:
@@ -79,8 +78,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                               if (r.status == 'open') ...[
                                 ElevatedButton(
                                   onPressed: () =>
-                                      _handleAction(r.id,
-                                          RepairAction.assign),
+                                      _showAssignDialog(r.id),
                                   child: const Text('分配维修人员'),
                                 ),
                                 const SizedBox(height: 4),
@@ -126,6 +124,44 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                   );
                 },
               ),
+      ),
+    );
+  }
+
+  void _showAssignDialog(String repairId) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('分配维修人员'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: '维修人员ID',
+            hintText: '请输入维修人员ID',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final id = controller.text.trim();
+              Navigator.pop(ctx);
+              if (id.isNotEmpty) {
+                _handleAction(repairId, RepairAction.assign,
+                    maintainerId: id);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请输入维修人员ID')),
+                );
+              }
+            },
+            child: const Text('确认分配'),
+          ),
+        ],
       ),
     );
   }
