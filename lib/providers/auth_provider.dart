@@ -1,18 +1,20 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final FlutterSecureStorage? _secureStorage;
+  SharedPreferences? _prefs;
 
-  AuthProvider() : _secureStorage = _initStorage();
+  AuthProvider() {
+    _initPrefs();
+  }
 
-  static FlutterSecureStorage? _initStorage() {
+  Future<void> _initPrefs() async {
     try {
-      return const FlutterSecureStorage();
+      _prefs = await SharedPreferences.getInstance();
     } catch (_) {
-      return null;
+      // Non-fatal: app works without persistence
     }
   }
 
@@ -87,35 +89,31 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _persistTokens() async {
-    if (_secureStorage == null) return;
+    if (_prefs == null) return;
     try {
-      final storage = _secureStorage;
+      final prefs = _prefs;
       if (_accessToken != null) {
-        await storage.write(key: 'access_token', value: _accessToken);
+        await prefs!.setString('access_token', _accessToken!);
       }
       if (_refreshToken != null) {
-        await storage.write(key: 'refresh_token', value: _refreshToken);
+        await prefs!.setString('refresh_token', _refreshToken!);
       }
     } catch (_) {}
   }
 
   Future<void> _clearPersistedTokens() async {
-    if (_secureStorage == null) return;
+    if (_prefs == null) return;
     try {
-      final storage = _secureStorage;
-      await storage.delete(key: 'access_token');
-      await storage.delete(key: 'refresh_token');
+      await _prefs!.remove('access_token');
+      await _prefs!.remove('refresh_token');
     } catch (_) {}
   }
 
   Future<bool> tryAutoLogin() async {
-    if (_secureStorage == null) return false;
+    if (_prefs == null) return false;
     try {
-      final storage = _secureStorage;
-      final accessToken =
-          await storage.read(key: 'access_token');
-      final refreshToken =
-          await storage.read(key: 'refresh_token');
+      final accessToken = _prefs!.getString('access_token');
+      final refreshToken = _prefs!.getString('refresh_token');
       if (accessToken == null || refreshToken == null) {
         return false;
       }

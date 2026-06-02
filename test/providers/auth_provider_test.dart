@@ -18,11 +18,11 @@ void main() {
       expect(provider.currentUser, isNull);
     });
 
-    test('tryAutoLogin returns false when secure storage is not available', () async {
+    test('tryAutoLogin returns false when storage is not available', () async {
       final provider = AuthProvider();
       final result = await provider.tryAutoLogin();
-      // Either returns false or true depending on platform
-      // In test environment, flutter_secure_storage may throw
+      // _prefs is null initially because _initPrefs() is async,
+      // so tryAutoLogin returns false without attempting to read
       expect(result, isFalse);
     });
   });
