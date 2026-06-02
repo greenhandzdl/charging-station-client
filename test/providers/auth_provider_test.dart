@@ -1,0 +1,29 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:charging_station_client/providers/auth_provider.dart';
+
+void main() {
+  group('AuthProvider', () {
+    test('initial state is not logged in', () {
+      final provider = AuthProvider();
+      expect(provider.isLoggedIn, isFalse);
+      expect(provider.accessToken, isNull);
+      expect(provider.refreshToken, isNull);
+      expect(provider.currentUser, isNull);
+    });
+
+    test('logout clears state', () {
+      final provider = AuthProvider();
+      provider.logout();
+      expect(provider.isLoggedIn, isFalse);
+      expect(provider.currentUser, isNull);
+    });
+
+    test('tryAutoLogin returns false when secure storage is not available', () async {
+      final provider = AuthProvider();
+      final result = await provider.tryAutoLogin();
+      // Either returns false or true depending on platform
+      // In test environment, flutter_secure_storage may throw
+      expect(result, isFalse);
+    });
+  });
+}
