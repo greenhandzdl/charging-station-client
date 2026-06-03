@@ -104,7 +104,7 @@ class _StationManagementScreenState extends State<StationManagementScreen> {
         TextEditingController(text: existing?.name ?? '');
     final locationController =
         TextEditingController(text: existing?.location ?? '');
-    String selectedStatus = existing?.status ?? 'active';
+    String selectedStatus = existing?.status ?? 'NORMAL';
     final isEditing = existing != null;
 
     showDialog(
@@ -143,11 +143,9 @@ class _StationManagementScreenState extends State<StationManagementScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'active', child: Text('启用')),
+                        DropdownMenuItem(value: 'NORMAL', child: Text('启用')),
                         DropdownMenuItem(
-                            value: 'inactive', child: Text('停用')),
-                        DropdownMenuItem(
-                            value: 'maintenance', child: Text('维护中')),
+                            value: 'MAINTENANCE', child: Text('维护中')),
                       ],
                       onChanged: (v) {
                         if (v != null) {
@@ -194,11 +192,9 @@ class _StationManagementScreenState extends State<StationManagementScreen> {
 
   String _statusLabel(String status) {
     switch (status) {
-      case 'active':
+      case 'NORMAL':
         return '启用';
-      case 'inactive':
-        return '停用';
-      case 'maintenance':
+      case 'MAINTENANCE':
         return '维护中';
       default:
         return status;
@@ -207,11 +203,9 @@ class _StationManagementScreenState extends State<StationManagementScreen> {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'active':
+      case 'NORMAL':
         return Colors.green;
-      case 'inactive':
-        return Colors.grey;
-      case 'maintenance':
+      case 'MAINTENANCE':
         return Colors.orange;
       default:
         return Colors.grey;

@@ -25,7 +25,7 @@ class StationModel {
       chargerCount: (json['chargerCount'] as num?)?.toInt() ??
           (json['charger_count'] as num?)?.toInt() ??
           0,
-      status: json['status'] as String? ?? 'unknown',
+      status: json['status'] as String? ?? 'NORMAL',
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String)
           : null,

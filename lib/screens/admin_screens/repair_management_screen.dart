@@ -75,7 +75,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                               Text('报修人: ${r.reporterName}'),
                               Text('时间: ${r.reportedAt}'),
                               const SizedBox(height: 8),
-                              if (r.status == 'open') ...[
+                              if (r.status == 'OPEN') ...[
                                 ElevatedButton(
                                   onPressed: () =>
                                       _showAssignDialog(r.id),
@@ -90,7 +90,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                       const Text('直接关闭'),
                                 ),
                               ],
-                              if (r.status == 'in_progress')
+                              if (r.status == 'IN_PROGRESS')
                                 ElevatedButton(
                                   onPressed: () =>
                                       _handleAction(r.id,
@@ -98,7 +98,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                   child:
                                       const Text('标记维修完成'),
                                 ),
-                              if (r.status == 'resolved') ...[
+                              if (r.status == 'RESOLVED') ...[
                                 ElevatedButton(
                                   onPressed: () =>
                                       _handleAction(r.id,

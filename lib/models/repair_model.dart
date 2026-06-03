@@ -34,7 +34,7 @@ class RepairModel {
       chargerCode: json['chargerCode'] as String? ??
           json['charger_code'] as String?,
       description: json['description'] as String? ?? '',
-      status: json['status'] as String? ?? 'open',
+      status: json['status'] as String? ?? 'OPEN',
       reporterName: json['reporterName'] as String? ??
           json['reporter_name'] as String?,
       reporterId: json['reporterId'] as String? ??

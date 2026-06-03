@@ -269,7 +269,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
                           Text('${charger.chargerCode} (${charger.type})'),
                       subtitle: Text('状态: ${charger.status}'),
                       selected: _selectedCharger?.id == charger.id,
-                      onTap: charger.status == 'idle'
+                      onTap: charger.status == 'IDLE'
                           ? () => setState(
                                   () => _selectedCharger = charger)
                           : null,
@@ -280,7 +280,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
 
           // Charge control buttons
           if (currentRecord != null &&
-              currentRecord.status == 'processing')
+              currentRecord.status == 'PROCESSING')
             ElevatedButton.icon(
               onPressed: _isCharging ? null : _stopCharge,
               icon: const Icon(Icons.stop),

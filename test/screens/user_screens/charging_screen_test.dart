@@ -79,15 +79,15 @@ void main() {
           id: 'c1',
           stationId: 's1',
           chargerCode: 'CC-001',
-          type: 'fast',
-          status: 'idle',
+          type: 'FAST',
+          status: 'IDLE',
         ),
         createMockCharger(
           id: 'c2',
           stationId: 's1',
           chargerCode: 'CC-002',
-          type: 'slow',
-          status: 'idle',
+          type: 'SLOW',
+          status: 'IDLE',
         ),
       ]);
       await tester.pumpAndSettle();
@@ -114,7 +114,7 @@ void main() {
           id: 'c1',
           stationId: 's1',
           chargerCode: 'CC-001',
-          status: 'idle',
+          status: 'IDLE',
         ),
       ]);
       await tester.pumpAndSettle();
@@ -144,7 +144,7 @@ void main() {
 
       // Add idle charger and select it
       chargingProvider.setChargers([
-        createMockCharger(id: 'c1', chargerCode: 'CC-001', status: 'idle'),
+        createMockCharger(id: 'c1', chargerCode: 'CC-001', status: 'IDLE'),
       ]);
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('CC-001'));
@@ -163,7 +163,7 @@ void main() {
       // Set simulating an active charge
       chargingProvider.setCurrentRecord(createMockChargeRecord(
         id: 'record1',
-        status: 'processing',
+        status: 'PROCESSING',
       ));
 
       await tester.pumpWidget(createTestWidget());
@@ -179,7 +179,7 @@ void main() {
     testWidgets('calls stopCharge and shows success snackbar', (tester) async {
       chargingProvider.setCurrentRecord(createMockChargeRecord(
         id: 'record1',
-        status: 'processing',
+        status: 'PROCESSING',
       ));
 
       await tester.pumpWidget(createTestWidget());
@@ -206,7 +206,7 @@ void main() {
       await tester.tap(find.text('朝阳充电站'));
       await tester.pumpAndSettle();
       chargingProvider.setChargers([
-        createMockCharger(id: 'c1', chargerCode: 'CC-001', status: 'idle'),
+        createMockCharger(id: 'c1', chargerCode: 'CC-001', status: 'IDLE'),
       ]);
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('CC-001'));

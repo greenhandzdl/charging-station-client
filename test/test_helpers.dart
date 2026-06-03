@@ -11,7 +11,7 @@ UserModel createMockUser({
   String name = '测试用户',
   String phone = '13800138000',
   String plateNumber = '京A12345',
-  String role = 'user',
+  String role = 'USER',
   double balance = 100.0,
 }) {
   return UserModel(
@@ -30,7 +30,7 @@ StationModel createMockStation({
   String name = '测试充电站',
   String location = '北京市朝阳区',
   int chargerCount = 4,
-  String status = 'active',
+  String status = 'NORMAL',
 }) {
   return StationModel(
     id: id,
@@ -46,8 +46,8 @@ ChargerModel createMockCharger({
   String id = 'charger1',
   String stationId = 'station1',
   String chargerCode = 'CC-001',
-  String type = 'fast',
-  String status = 'idle',
+  String type = 'FAST',
+  String status = 'IDLE',
 }) {
   return ChargerModel(
     id: id,
@@ -65,8 +65,8 @@ ChargeRecordModel createMockChargeRecord({
   String stationName = '测试充电站',
   double energyKwh = 25.5,
   double fee = 35.0,
-  String status = 'processing',
-  String deductionStatus = 'pending',
+  String status = 'PROCESSING',
+  String deductionStatus = 'PENDING',
   String startTime = '2026-06-01 10:00:00',
   String endTime = '',
 }) {

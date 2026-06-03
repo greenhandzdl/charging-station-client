@@ -35,11 +35,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _showRoleDialog(UserModel user) async {
-    final roles = ['user', 'admin', 'maintainer'];
+    final roles = ['USER', 'ADMIN', 'MAINTAINER'];
     final roleLabels = {
-      'user': '普通用户',
-      'admin': '管理员',
-      'maintainer': '维护员',
+      'USER': '普通用户',
+      'ADMIN': '管理员',
+      'MAINTAINER': '维护员',
     };
 
     final confirmed = await showDialog<String>(
@@ -133,12 +133,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   String _roleLabel(String role) {
     switch (role) {
-      case 'admin':
+      case 'ADMIN':
         return '管理员';
-      case 'maintainer':
+      case 'MAINTAINER':
         return '维护员';
-      case 'user':
+      case 'USER':
         return '普通用户';
+      case 'SUPER_ADMIN':
+        return '超级管理员';
       default:
         return role;
     }
@@ -146,11 +148,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   Color _roleColor(String role) {
     switch (role) {
-      case 'admin':
+      case 'ADMIN':
         return Colors.red;
-      case 'maintainer':
+      case 'MAINTAINER':
         return Colors.orange;
-      case 'user':
+      case 'SUPER_ADMIN':
+        return Colors.purple;
+      case 'USER':
         return Colors.blue;
       default:
         return Colors.grey;

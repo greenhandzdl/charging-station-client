@@ -21,7 +21,7 @@ class UserModel {
       name: json['name'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       plateNumber: json['plateNumber'] as String? ?? json['plate_number'] as String? ?? '',
-      role: json['role'] as String? ?? 'user',
+      role: json['role'] as String? ?? 'USER',
       balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
     );
   }

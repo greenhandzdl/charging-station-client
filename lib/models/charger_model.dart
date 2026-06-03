@@ -25,8 +25,8 @@ class ChargerModel {
       chargerCode: json['chargerCode'] as String? ??
           json['charger_code'] as String? ??
           '',
-      type: json['type'] as String? ?? 'slow',
-      status: json['status'] as String? ?? 'unknown',
+      type: json['type'] as String? ?? 'SLOW',
+      status: json['status'] as String? ?? 'IDLE',
       stationName: json['stationName'] as String? ??
           json['station_name'] as String?,
       stationId: json['stationId'] as String? ??

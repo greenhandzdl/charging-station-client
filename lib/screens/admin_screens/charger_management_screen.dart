@@ -125,8 +125,8 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
   void _showChargerForm(ChargerModel? existing) {
     final codeController =
         TextEditingController(text: existing?.chargerCode ?? '');
-    String selectedType = existing?.type ?? 'slow';
-    String selectedStatus = existing?.status ?? 'active';
+    String selectedType = existing?.type ?? 'SLOW';
+    String selectedStatus = existing?.status ?? 'IDLE';
 
     showDialog(
       context: context,
@@ -173,8 +173,8 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'fast', child: Text('快充')),
-                        DropdownMenuItem(value: 'slow', child: Text('慢充')),
+                        DropdownMenuItem(value: 'FAST', child: Text('快充')),
+                        DropdownMenuItem(value: 'SLOW', child: Text('慢充')),
                       ],
                       onChanged: (v) {
                         if (v != null) {
@@ -190,11 +190,11 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'active', child: Text('启用')),
+                        DropdownMenuItem(value: 'IDLE', child: Text('空闲')),
                         DropdownMenuItem(
-                            value: 'inactive', child: Text('停用')),
+                            value: 'CHARGING', child: Text('使用中')),
                         DropdownMenuItem(
-                            value: 'fault', child: Text('故障')),
+                            value: 'FAULT', child: Text('故障')),
                       ],
                       onChanged: (v) {
                         if (v != null) {
@@ -245,9 +245,9 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
 
   String _typeLabel(String type) {
     switch (type) {
-      case 'fast':
+      case 'FAST':
         return '快充';
-      case 'slow':
+      case 'SLOW':
         return '慢充';
       default:
         return type;
@@ -256,11 +256,11 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
 
   String _statusLabel(String status) {
     switch (status) {
-      case 'active':
-        return '启用';
-      case 'inactive':
-        return '停用';
-      case 'fault':
+      case 'IDLE':
+        return '空闲';
+      case 'CHARGING':
+        return '使用中';
+      case 'FAULT':
         return '故障';
       default:
         return status;
@@ -269,11 +269,11 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'active':
+      case 'IDLE':
         return Colors.green;
-      case 'inactive':
-        return Colors.grey;
-      case 'fault':
+      case 'CHARGING':
+        return Colors.blue;
+      case 'FAULT':
         return Colors.red;
       default:
         return Colors.grey;
@@ -282,9 +282,9 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
 
   Color _typeColor(String type) {
     switch (type) {
-      case 'fast':
+      case 'FAST':
         return Colors.orange;
-      case 'slow':
+      case 'SLOW':
         return Colors.blue;
       default:
         return Colors.grey;
