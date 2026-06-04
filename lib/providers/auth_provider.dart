@@ -77,7 +77,10 @@ class AuthProvider extends ChangeNotifier {
           await ApiService.refreshToken(_refreshToken!);
       _accessToken = loginResponse.accessToken;
       _refreshToken = loginResponse.refreshToken;
-      _currentUser = loginResponse.user;
+      // Backend refresh response may omit user — preserve existing user data
+      if (loginResponse.user.id.isNotEmpty) {
+        _currentUser = loginResponse.user;
+      }
       ApiService.setAccessToken(_accessToken);
       await _persistTokens();
       notifyListeners();
@@ -129,7 +132,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> tryAutoLogin() async {
-    if (_prefs == null) return false;
+    // Ensure prefs are initialized
+    if (_prefs == null) {
+      try {
+        _prefs = await SharedPreferences.getInstance();
+      } catch (_) {
+        return false;
+      }
+    }
     try {
       final accessToken = _prefs!.getString('access_token');
       final refreshToken = _prefs!.getString('refresh_token');

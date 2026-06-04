@@ -21,6 +21,22 @@ class ApiService {
     return headers;
   }
 
+  /// Extract error message from backend response.
+  ///
+  /// Backend error format: {"error": {"code": "UNAUTHORIZED", "message": "xxx"}}
+  /// or {"message": "xxx"} for simple responses.
+  static String _extractErrorMessage(Map<String, dynamic> body, int statusCode) {
+    final error = body['error'];
+    if (error is Map<String, dynamic>) {
+      final msg = error['message'] as String?;
+      if (msg != null && msg.isNotEmpty) return msg;
+    }
+    if (error is String && error.isNotEmpty) return error;
+    final msg = body['message'] as String?;
+    if (msg != null && msg.isNotEmpty) return msg;
+    return '请求失败 ($statusCode)';
+  }
+
   static Future<Map<String, dynamic>> _handleResponse(
       http.Response response) async {
     final body = response.body.isNotEmpty
@@ -31,10 +47,23 @@ class ApiService {
     }
     throw ApiException(
       statusCode: response.statusCode,
-      message: body['error'] as String? ??
-          body['message'] as String? ??
-          '请求失败 ($response.statusCode)',
+      message: _extractErrorMessage(body, response.statusCode),
     );
+  }
+
+  /// Helper: parse error from the response body for GET-list endpoints.
+  /// Returns the parsed JSON body if successful.
+  static Map<String, dynamic> _checkForError(http.Response response, String fallbackMsg) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _extractErrorMessage(body, response.statusCode),
+      );
+    }
+    return {};
   }
 
   // ---- Auth ----
@@ -183,17 +212,7 @@ class ApiService {
       Uri.parse('$baseUrl/charges'),
       headers: _headers(),
     );
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final body = response.body.isNotEmpty
-          ? jsonDecode(response.body) as Map<String, dynamic>
-          : <String, dynamic>{};
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
-      );
-    }
+    _checkForError(response, '获取充电记录失败');
     final list = response.body.isNotEmpty
         ? jsonDecode(response.body) as List<dynamic>
         : <dynamic>[];
@@ -215,9 +234,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty
@@ -258,9 +275,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty
@@ -313,9 +328,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty
@@ -396,9 +409,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty
@@ -432,9 +443,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty
@@ -493,9 +502,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty
@@ -515,9 +522,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty
@@ -545,9 +550,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty
@@ -609,9 +612,7 @@ class ApiService {
           : <String, dynamic>{};
       throw ApiException(
         statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
+        message: _extractErrorMessage(body, response.statusCode),
       );
     }
     final list = response.body.isNotEmpty

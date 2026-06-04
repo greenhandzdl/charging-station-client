@@ -27,7 +27,10 @@ class ChargeRecordModel {
 
   factory ChargeRecordModel.fromJson(Map<String, dynamic> json) {
     return ChargeRecordModel(
-      id: json['id'] as String? ?? '',
+      id: json['id'] as String? ??
+          json['recordId'] as String? ??
+          json['record_id'] as String? ??
+          '',
       startTime: json['startTime'] as String? ??
           json['start_time'] as String? ??
           '',
