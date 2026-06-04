@@ -55,8 +55,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             _phoneController.text.trim(),
             _passwordController.text,
             _plateNumberController.text.trim(),
-            captchaId: _captchaId ?? '',
-            captchaCode: _captchaController.text.trim(),
+            captchaId: (_captchaId != null && _captchaId!.isNotEmpty) ? _captchaId! : '',
+            captchaCode: (_captchaId != null && _captchaId!.isNotEmpty)
+                ? _captchaController.text.trim()
+                : '',
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -162,18 +164,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     v == null || v.trim().isEmpty ? '请输入车牌号' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _captchaController,
-                decoration: const InputDecoration(
-                  labelText: '验证码',
-                  prefixIcon: Icon(Icons.security),
+              if (_captchaId != null && _captchaId!.isNotEmpty) ...[
+                TextFormField(
+                  controller: _captchaController,
+                  decoration: const InputDecoration(
+                    labelText: '验证码',
+                    prefixIcon: Icon(Icons.security),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return '请输入验证码';
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return '请输入验证码';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
+              ] else
+                const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : _register,
                 child: _isLoading
