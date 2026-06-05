@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Chrome (debug, --no-dds)",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "chrome",
+      "args": ["--no-dds"],
+      "toolArgs": ["--no-dds"],
+      "env": {
+        "DISPLAY": ":0",
+        "XAUTHORITY": "/run/user/1000/.mutter-Xwaylandauth.HPLNQ3"
+      }
+    },
+    {
+      "name": "Web Server (--no-dds)",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "web-server",
+      "args": ["--web-port", "8090", "--no-dds"],
+      "toolArgs": ["--no-dds"],
+      "env": {
+        "DISPLAY": ":0",
+        "XAUTHORITY": "/run/user/1000/.mutter-Xwaylandauth.HPLNQ3"
+      }
+    },
+    {
+      "name": "Chrome (release)",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "chrome",
+      "flutterMode": "release"
+    },
+    {
+      "name": "Linux Desktop (debug)",
+      "type": "dart",
+      "request": "launch",
+      "deviceId": "linux"
+    }
+  ],
+  "compounds": []
+}

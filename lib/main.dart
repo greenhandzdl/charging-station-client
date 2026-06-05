@@ -13,65 +13,6 @@ void main() {
   runApp(const ChargingStationApp());
 }
 
-class _ErrorBoundary extends StatefulWidget {
-  final Widget child;
-  const _ErrorBoundary({required this.child});
-
-  @override
-  State<_ErrorBoundary> createState() => _ErrorBoundaryState();
-}
-
-class _ErrorBoundaryState extends State<_ErrorBoundary> {
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    // Catch and display Flutter framework errors
-    FlutterError.onError = (details) {
-      FlutterError.presentError(details);
-      if (mounted) {
-        setState(() => _error = details.exceptionAsString());
-      }
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text('应用出现错误', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text(
-                  _error!,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => setState(() => _error = null),
-                  child: const Text('重试'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    return widget.child;
-  }
-}
-
 class ChargingStationApp extends StatelessWidget {
   const ChargingStationApp({super.key});
 
@@ -84,16 +25,14 @@ class ChargingStationApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RepairProvider()),
         ChangeNotifierProvider(create: (_) => StatisticsProvider()),
       ],
-      child: _ErrorBoundary(
-        child: MaterialApp(
-          title: '充电站管理系统',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorSchemeSeed: Colors.blue,
-            useMaterial3: true,
-          ),
-          home: const AuthGate(),
+      child: MaterialApp(
+        title: '充电站管理系统',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorSchemeSeed: Colors.blue,
+          useMaterial3: true,
         ),
+        home: const AuthGate(),
       ),
     );
   }

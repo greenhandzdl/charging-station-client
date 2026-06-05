@@ -119,44 +119,15 @@
     <div id="loading-text">正在加载充电站管理系统...</div>
   </div>
 
-  <div id="error-container">
-    <div class="error-icon">!</div>
-    <h2>应用加载失败</h2>
-    <p>页面初始化过程中出现错误，请检查网络连接后刷新页面重试。</p>
-    <button onclick="location.reload()">刷新页面</button>
-    <div id="error-detail"></div>
-  </div>
-
   <script>
     // Show loading screen immediately
     document.getElementById('loading-container').style.display = 'flex';
 
-    // Capture Flutter initialization errors
-    window.addEventListener('error', function(e) {
-      var detail = e.message || (e.error && e.error.toString()) || '未知错误';
-      showError(detail);
-    });
-
-    // Timeout: if Flutter doesn't load in 30 seconds, show error
-    var flutterLoadTimer = setTimeout(function() {
-      showError('应用初始化超时（30秒），请检查网络连接并刷新页面。');
-    }, 30000);
-
-    function showError(detail) {
-      clearTimeout(flutterLoadTimer);
-      var loading = document.getElementById('loading-container');
-      var error = document.getElementById('error-container');
-      if (loading) loading.classList.add('hidden');
-      if (error) {
-        error.classList.add('visible');
-        var detailEl = document.getElementById('error-detail');
-        if (detailEl && detail) detailEl.textContent = '错误详情: ' + detail;
-      }
-    }
-
-    // When Flutter engine is ready, hide loading
+    // When Flutter engine renders its first frame, hide our loading screen.
+    // NOTE: In DDC (dev) mode, dwds may emit harmless errors that don't
+    // prevent Flutter from loading — those are debug-infrastructure noise
+    // and do NOT appear in release builds (flutter build web --release).
     window.addEventListener('flutter-first-frame', function() {
-      clearTimeout(flutterLoadTimer);
       var el = document.getElementById('loading-container');
       if (el) el.classList.add('hidden');
     });

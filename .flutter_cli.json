@@ -1,0 +1,8 @@
+{
+  "_note": "Flutter 3.44.0 的 dwds 调试服务器存在一个序列化 Bug（_JsonMap is not a subtype of String），会导致 debug 模式白屏崩溃。--no-dds 可绕过此 Bug。",
+  "dart-flags": "--no-dds",
+  "flutter-run-args": {
+    "chrome": ["--no-dds"],
+    "web-server": ["--web-port", "8090", "--no-dds"]
+  }
+}
