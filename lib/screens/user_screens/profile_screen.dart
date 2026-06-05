@@ -6,7 +6,9 @@ import '../user_screens/payment_entry_screen.dart';
 import '../user_screens/repair_screen.dart';
 import '../user_screens/charger_status_screen.dart';
 import '../user_screens/login_screen.dart';
+import '../user_screens/maintainer_workspace_screen.dart';
 import '../admin_screens/admin_dashboard_screen.dart';
+import '../../models/user_role.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -15,7 +17,9 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final user = auth.currentUser;
-    final isAdmin = user?.role == 'ADMIN' || user?.role == 'SUPER_ADMIN';
+    final role = UserRole.fromString(user?.role ?? 'USER');
+    final isAdmin = role.isAdmin;
+    final isMaintainer = role.isMaintainer;
 
     return Scaffold(
       appBar: AppBar(title: const Text('我的')),
@@ -53,6 +57,21 @@ class ProfileScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const AdminDashboardScreen()),
+                  );
+                },
+              ),
+            ),
+          if (isMaintainer)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.build_circle),
+                title: const Text('维修工作台'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const MaintainerWorkspaceScreen()),
                   );
                 },
               ),

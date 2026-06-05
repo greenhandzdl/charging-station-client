@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../user_screens/login_screen.dart';
+import '../../models/user_role.dart';
 import 'station_management_screen.dart';
 import 'charger_management_screen.dart';
 import 'user_management_screen.dart';
@@ -14,8 +15,8 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final isAdmin = auth.currentUser?.role == 'SUPER_ADMIN' ||
-        auth.currentUser?.role == 'ADMIN';
+    final role = UserRole.fromString(auth.currentUser?.role ?? 'USER');
+    final isAdmin = role.isAdmin;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,36 +43,38 @@ class AdminDashboardScreen extends StatelessWidget {
         crossAxisSpacing: 12,
         childAspectRatio: 1.2,
         children: [
-          _buildMenuItem(
-            context,
-            icon: Icons.ev_station,
-            label: '充电站管理',
-            onTap: () => Navigator.push(
+          if (isAdmin) ...[
+            _buildMenuItem(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const StationManagementScreen()),
+              icon: Icons.ev_station,
+              label: '充电站管理',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const StationManagementScreen()),
+              ),
             ),
-          ),
-          _buildMenuItem(
-            context,
-            icon: Icons.battery_charging_full,
-            label: '充电桩管理',
-            onTap: () => Navigator.push(
+            _buildMenuItem(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const ChargerManagementScreen()),
+              icon: Icons.battery_charging_full,
+              label: '充电桩管理',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const ChargerManagementScreen()),
+              ),
             ),
-          ),
-          _buildMenuItem(
-            context,
-            icon: Icons.people,
-            label: '用户管理',
-            onTap: () => Navigator.push(
+            _buildMenuItem(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const UserManagementScreen()),
+              icon: Icons.people,
+              label: '用户管理',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const UserManagementScreen()),
+              ),
             ),
-          ),
+          ],
           _buildMenuItem(
             context,
             icon: Icons.build,

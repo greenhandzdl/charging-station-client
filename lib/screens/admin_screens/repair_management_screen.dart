@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/repair_provider.dart';
+import '../../models/repair_model.dart';
 
 class RepairManagementScreen extends StatefulWidget {
   const RepairManagementScreen({super.key});
@@ -50,17 +52,30 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<RepairProvider>();
+    final auth = context.watch<AuthProvider>();
+    final role = auth.userRole;
+    final isMaintainer = role.isMaintainer;
+    final isAdmin = role.isAdmin;
+    final currentUserId = auth.currentUser?.id ?? '';
+
+    List<RepairModel> displayedRepairs = provider.repairs;
+    if (isMaintainer) {
+      displayedRepairs = provider.repairs
+          .where((r) => r.status == 'OPEN' || r.handledBy == currentUserId)
+          .toList();
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('报修管理')),
       body: RefreshIndicator(
         onRefresh: () => provider.fetchRepairs(),
-        child: provider.repairs.isEmpty
+        child: displayedRepairs.isEmpty
             ? const Center(child: Text('暂无报修记录'))
             : ListView.builder(
                 padding: const EdgeInsets.all(8),
-                itemCount: provider.repairs.length,
+                itemCount: displayedRepairs.length,
                 itemBuilder: (_, i) {
-                  final r = provider.repairs[i];
+                  final r = displayedRepairs[i];
                   return Card(
                     child: ExpansionTile(
                       title: Text('${r.chargerCode} - ${r.status}'),
@@ -75,7 +90,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                               Text('报修人: ${r.reporterName}'),
                               Text('时间: ${r.reportedAt}'),
                               const SizedBox(height: 8),
-                              if (r.status == 'OPEN') ...[
+                              if (isAdmin && r.status == 'OPEN') ...[
                                 ElevatedButton(
                                   onPressed: () =>
                                       _showAssignDialog(r.id),
@@ -90,7 +105,16 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                       const Text('直接关闭'),
                                 ),
                               ],
-                              if (r.status == 'IN_PROGRESS')
+                              if (isMaintainer && r.status == 'OPEN')
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      _handleAction(r.id,
+                                          RepairAction.assign,
+                                          maintainerId: currentUserId),
+                                  child: const Text('接单'),
+                                ),
+                              if (r.status == 'IN_PROGRESS' &&
+                                  (isAdmin || r.handledBy == currentUserId))
                                 ElevatedButton(
                                   onPressed: () =>
                                       _handleAction(r.id,
@@ -98,7 +122,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                   child:
                                       const Text('标记维修完成'),
                                 ),
-                              if (r.status == 'RESOLVED') ...[
+                              if (isAdmin && r.status == 'RESOLVED') ...[
                                 ElevatedButton(
                                   onPressed: () =>
                                       _handleAction(r.id,

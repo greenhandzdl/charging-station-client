@@ -27,6 +27,11 @@ class AuthProvider extends ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null && _accessToken != null;
 
+  UserRole get userRole {
+    if (_currentUser == null) return UserRole.user;
+    return UserRole.fromString(_currentUser!.role);
+  }
+
   Future<void> login(String phone, String password,
       {String? captchaId, String? captchaCode}) async {
     final loginResponse = await ApiService.login(

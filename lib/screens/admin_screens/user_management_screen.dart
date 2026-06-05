@@ -89,7 +89,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _deleteUser(UserModel user) async {
-    if (user.role == 'admin') {
+    if (user.role == 'ADMIN') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('不能删除管理员')),
       );
