@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -31,18 +32,26 @@ class QrScanScreen extends StatefulWidget {
 }
 
 class _QrScanScreenState extends State<QrScanScreen> {
-  final MobileScannerController _scannerController =
-      MobileScannerController();
+  MobileScannerController? _scannerController;
   bool _isProcessing = false;
   bool _cameraError = false;
+  bool _useManualInput = false;
 
   // Manual fallback
   final _manualController = TextEditingController();
-  bool _useManualInput = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _useManualInput = kIsWeb; // Web has no camera support
+    if (!kIsWeb) {
+      _scannerController = MobileScannerController();
+    }
+  }
 
   @override
   void dispose() {
-    _scannerController.dispose();
+    _scannerController?.dispose();
     _manualController.dispose();
     super.dispose();
   }
@@ -52,13 +61,15 @@ class _QrScanScreenState extends State<QrScanScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('扫码充电'),
-        actions: [
-          IconButton(
-            icon: Icon(_useManualInput ? Icons.qr_code : Icons.edit),
-            tooltip: _useManualInput ? '扫码模式' : '手动输入',
-            onPressed: () => setState(() => _useManualInput = !_useManualInput),
-          ),
-        ],
+        actions: kIsWeb
+            ? null
+            : [
+                IconButton(
+                  icon: Icon(_useManualInput ? Icons.qr_code : Icons.edit),
+                  tooltip: _useManualInput ? '扫码模式' : '手动输入',
+                  onPressed: () => setState(() => _useManualInput = !_useManualInput),
+                ),
+              ],
       ),
       body: _useManualInput ? _buildManualInput() : _buildScanner(),
     );
@@ -92,10 +103,37 @@ class _QrScanScreenState extends State<QrScanScreen> {
       );
     }
 
+    final scanner = _scannerController;
+    if (scanner == null) {
+      // Web platform — no camera support, show manual input prompt
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.qr_code_scanner, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              const Text('Web端不支持摄像头扫码',
+                  style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 8),
+              const Text('请使用手动输入模式'),
+              const SizedBox(height: 24),
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.edit),
+                label: const Text('切换至手动输入'),
+                onPressed: () => setState(() => _useManualInput = true),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Stack(
       children: [
         MobileScanner(
-          controller: _scannerController,
+          controller: scanner,
           onDetect: _onDetect,
           errorBuilder: (context, error, child) {
             // Camera not available — show fallback

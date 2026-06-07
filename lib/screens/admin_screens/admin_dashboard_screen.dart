@@ -24,9 +24,9 @@ class AdminDashboardScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.arrow_back),
+            tooltip: '返回',
             onPressed: () {
-              auth.logout();
               Navigator.pop(context);
             },
           ),
