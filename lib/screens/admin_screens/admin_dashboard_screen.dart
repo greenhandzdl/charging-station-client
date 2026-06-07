@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../user_screens/login_screen.dart';
 import '../../models/user_role.dart';
 import 'station_management_screen.dart';
 import 'charger_management_screen.dart';
@@ -28,11 +27,7 @@ class AdminDashboardScreen extends StatelessWidget {
             icon: const Icon(Icons.logout),
             onPressed: () {
               auth.logout();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
+              Navigator.pop(context);
             },
           ),
         ],

@@ -116,23 +116,22 @@ class _ChargingScreenState extends State<ChargingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('充电'),
+        leading: IconButton(
+          icon: const Icon(Icons.qr_code_scanner),
+          tooltip: '扫码充电',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const QrScanScreen()),
+            );
+          },
+        ),
         actions: [
           // Toggle between station list mode and QR scan mode
           IconButton(
             icon: Icon(_useQrMode ? Icons.ev_station : Icons.qr_code),
             tooltip: _useQrMode ? '切换至站点列表' : '扫码/输入充电桩ID',
             onPressed: () => setState(() => _useQrMode = !_useQrMode),
-          ),
-          // Camera scan button
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            tooltip: '摄像头扫码',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const QrScanScreen()),
-              );
-            },
           ),
         ],
       ),
