@@ -34,6 +34,15 @@ class RepairProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> claimRepair(String repairId) async {
+    try {
+      await ApiService.claimRepair(repairId);
+      await fetchRepairs();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> resolveRepair(String repairId) async {
     try {
       await ApiService.resolveRepair(repairId);

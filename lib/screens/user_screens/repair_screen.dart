@@ -5,7 +5,9 @@ import '../../models/charger_model.dart';
 import '../../services/api_service.dart';
 
 class RepairScreen extends StatefulWidget {
-  const RepairScreen({super.key});
+  final String? initialChargerId;
+
+  const RepairScreen({super.key, this.initialChargerId});
 
   @override
   State<RepairScreen> createState() => _RepairScreenState();
@@ -44,6 +46,16 @@ class _RepairScreenState extends State<RepairScreen> {
       }
       if (mounted) {
         setState(() => _chargers = allChargers);
+        // Auto-select charger if initialChargerId provided
+        if (widget.initialChargerId != null) {
+          final match = allChargers.where(
+            (c) => c.id == widget.initialChargerId
+                || c.chargerCode == widget.initialChargerId,
+          );
+          if (match.isNotEmpty) {
+            _selectedCharger = match.first;
+          }
+        }
       }
     } catch (_) {
       // fail silently; user will see an empty dropdown

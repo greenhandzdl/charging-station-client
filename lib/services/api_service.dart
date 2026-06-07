@@ -464,6 +464,14 @@ class ApiService {
     await _handleResponse(response);
   }
 
+  static Future<void> claimRepair(String repairId) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/repairs/$repairId/claim'),
+      headers: _headers(),
+    );
+    await _handleResponse(response);
+  }
+
   static Future<void> resolveRepair(String repairId) async {
     final response = await http.put(
       Uri.parse('$baseUrl/repairs/$repairId/resolve'),
@@ -570,6 +578,46 @@ class ApiService {
         message: '导出失败',
       );
     }
+  }
+
+  // ---- Payment Approval (Admin) ----
+  static Future<List<PaymentModel>> getPendingPayments() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/payments/pending'),
+      headers: _headers(),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _extractErrorMessage(body, response.statusCode),
+      );
+    }
+    final list = response.body.isNotEmpty
+        ? jsonDecode(response.body) as List<dynamic>
+        : <dynamic>[];
+    return list
+        .map((e) => PaymentModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> approvePayment(String paymentId) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/payments/$paymentId/approve'),
+      headers: _headers(),
+    );
+    await _handleResponse(response);
+  }
+
+  static Future<void> rejectPayment(String paymentId, {String reason = '管理员拒绝'}) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/payments/$paymentId/reject'),
+      headers: _headers(),
+      body: jsonEncode({'reason': reason}),
+    );
+    await _handleResponse(response);
   }
 
   // ---- User Management (Admin) ----

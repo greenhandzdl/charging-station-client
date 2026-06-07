@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/charging_provider.dart';
+import 'qr_scan_screen.dart';
 
 class ChargingScreen extends StatefulWidget {
   const ChargingScreen({super.key});
@@ -121,6 +122,17 @@ class _ChargingScreenState extends State<ChargingScreen> {
             icon: Icon(_useQrMode ? Icons.ev_station : Icons.qr_code),
             tooltip: _useQrMode ? '切换至站点列表' : '扫码/输入充电桩ID',
             onPressed: () => setState(() => _useQrMode = !_useQrMode),
+          ),
+          // Camera scan button
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: '摄像头扫码',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const QrScanScreen()),
+              );
+            },
           ),
         ],
       ),

@@ -8,6 +8,7 @@ import 'charger_management_screen.dart';
 import 'user_management_screen.dart';
 import 'repair_management_screen.dart';
 import 'statistics_screen.dart';
+import 'recharge_approval_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -94,6 +95,17 @@ class AdminDashboardScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                     builder: (_) => const StatisticsScreen()),
+              ),
+            ),
+          if (isAdmin)
+            _buildMenuItem(
+              context,
+              icon: Icons.verified_user,
+              label: '充值审核',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const RechargeApprovalScreen()),
               ),
             ),
         ],
