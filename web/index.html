@@ -1,24 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="充电站管理系统 — Flutter Web">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -119,18 +107,57 @@
     <div id="loading-text">正在加载充电站管理系统...</div>
   </div>
 
+  <div id="error-container">
+    <div class="error-icon">!</div>
+    <h2>加载失败</h2>
+    <p>页面加载失败，请尝试检查网络连接或刷新页面。</p>
+    <button onclick="location.reload()">重新加载</button>
+    <div id="error-detail"></div>
+  </div>
+
   <script>
-    // Show loading screen immediately
-    document.getElementById('loading-container').style.display = 'flex';
+    // --- Loading screen control ---
+    var loadingEl = document.getElementById('loading-container');
 
     // When Flutter engine renders its first frame, hide our loading screen.
-    // NOTE: In DDC (dev) mode, dwds may emit harmless errors that don't
-    // prevent Flutter from loading — those are debug-infrastructure noise
-    // and do NOT appear in release builds (flutter build web --release).
     window.addEventListener('flutter-first-frame', function() {
-      var el = document.getElementById('loading-container');
-      if (el) el.classList.add('hidden');
+      hideLoading();
     });
+
+    function hideLoading() {
+      if (loadingEl) loadingEl.classList.add('hidden');
+    }
+
+    // --- Error handling with fallback ---
+    var errorEl = document.getElementById('error-container');
+    var errorDetailEl = document.getElementById('error-detail');
+
+    function showError(msg, detail) {
+      hideLoading();
+      if (errorEl) {
+        errorEl.classList.add('visible');
+        errorEl.style.display = 'flex';
+      }
+      if (errorDetailEl && detail) {
+        errorDetailEl.textContent = detail;
+      }
+    }
+
+    // Catch canvaskit / engine load failures
+    window.addEventListener('error', function(e) {
+      var src = e.target && (e.target.src || e.target.href);
+      if (src && (src.indexOf('canvaskit') !== -1 || src.indexOf('flutter') !== -1 || src.indexOf('main.dart.js') !== -1)) {
+        e.preventDefault();
+        showError('Flutter 资源加载失败', src);
+      }
+    }, true);
+
+    // Timeout: if Flutter doesn't load within 30 seconds, show error
+    setTimeout(function() {
+      if (loadingEl && !loadingEl.classList.contains('hidden')) {
+        showError('加载超时', '页面加载时间超过 30 秒，请检查网络或刷新重试。');
+      }
+    }, 30000);
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
