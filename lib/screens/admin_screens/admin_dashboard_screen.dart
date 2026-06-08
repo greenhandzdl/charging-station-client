@@ -21,16 +21,13 @@ class AdminDashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('管理后台'),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            tooltip: '返回',
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: '返回',
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: GridView.count(
         padding: const EdgeInsets.all(16),
