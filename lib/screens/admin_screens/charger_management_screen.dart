@@ -280,6 +280,28 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
     }
   }
 
+  Color _onlineStatusColor(String onlineStatus) {
+    switch (onlineStatus.toUpperCase()) {
+      case 'ONLINE':
+        return Colors.green;
+      case 'OFFLINE':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _onlineStatusLabel(String onlineStatus) {
+    switch (onlineStatus.toUpperCase()) {
+      case 'ONLINE':
+        return '在线';
+      case 'OFFLINE':
+        return '离线';
+      default:
+        return '未知';
+    }
+  }
+
   Color _typeColor(String type) {
     switch (type) {
       case 'FAST':
@@ -421,6 +443,23 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.circle,
+                                                size: 10,
+                                                color: _onlineStatusColor(c.onlineStatus),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                _onlineStatusLabel(c.onlineStatus),
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: _onlineStatusColor(c.onlineStatus),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                           const SizedBox(height: 4),
                                           Text(
                                               _formatTime(c.createdAt)),

@@ -108,6 +108,28 @@ class _ChargingScreenState extends State<ChargingScreen> {
     }
   }
 
+  Color _onlineStatusColor(String onlineStatus) {
+    switch (onlineStatus.toUpperCase()) {
+      case 'ONLINE':
+        return Colors.green;
+      case 'OFFLINE':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _onlineStatusLabel(String onlineStatus) {
+    switch (onlineStatus.toUpperCase()) {
+      case 'ONLINE':
+        return '在线';
+      case 'OFFLINE':
+        return '离线';
+      default:
+        return '未知';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ChargingProvider>();
@@ -278,7 +300,29 @@ class _ChargingScreenState extends State<ChargingScreen> {
                     child: ListTile(
                       title:
                           Text('${charger.chargerCode} (${charger.type})'),
-                      subtitle: Text('状态: ${charger.status}'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('状态: ${charger.status}'),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.circle,
+                                size: 10,
+                                color: _onlineStatusColor(charger.onlineStatus),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _onlineStatusLabel(charger.onlineStatus),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _onlineStatusColor(charger.onlineStatus),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                       selected: _selectedCharger?.id == charger.id,
                       onTap: charger.status == 'IDLE'
                           ? () => setState(

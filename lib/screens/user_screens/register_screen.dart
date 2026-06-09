@@ -118,6 +118,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   letterSpacing: 6,
                   color: Colors.blue)),
         ],
+        const SizedBox(width: 4),
+        const Text('(mock)', style: TextStyle(fontSize: 10, color: Colors.grey)),
       ],
     );
   }

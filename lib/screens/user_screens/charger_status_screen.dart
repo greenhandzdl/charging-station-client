@@ -211,6 +211,20 @@ class _ChargerStatusScreenState extends State<ChargerStatusScreen> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
+                                        const SizedBox(width: 16),
+                                        Icon(
+                                          Icons.circle,
+                                          size: 10,
+                                          color: _onlineStatusColor(charger.onlineStatus),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _onlineStatusLabel(charger.onlineStatus),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: _onlineStatusColor(charger.onlineStatus),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -224,6 +238,28 @@ class _ChargerStatusScreenState extends State<ChargerStatusScreen> {
         ],
       ),
     );
+  }
+
+  Color _onlineStatusColor(String onlineStatus) {
+    switch (onlineStatus.toUpperCase()) {
+      case 'ONLINE':
+        return Colors.green;
+      case 'OFFLINE':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _onlineStatusLabel(String onlineStatus) {
+    switch (onlineStatus.toUpperCase()) {
+      case 'ONLINE':
+        return '在线';
+      case 'OFFLINE':
+        return '离线';
+      default:
+        return '未知';
+    }
   }
 
   String _typeLabel(String type) {

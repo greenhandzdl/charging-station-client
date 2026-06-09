@@ -4,6 +4,7 @@ class ChargerModel {
   final String chargerCode;
   final String type;
   final String status;
+  final String onlineStatus;
   final String? stationName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -14,6 +15,7 @@ class ChargerModel {
     required this.chargerCode,
     required this.type,
     required this.status,
+    required this.onlineStatus,
     this.stationName,
     this.createdAt,
     this.updatedAt,
@@ -27,6 +29,9 @@ class ChargerModel {
           '',
       type: json['type'] as String? ?? 'SLOW',
       status: json['status'] as String? ?? 'IDLE',
+      onlineStatus: json['onlineStatus'] as String? ??
+          json['online_status'] as String? ??
+          'ONLINE',
       stationName: json['stationName'] as String? ??
           json['station_name'] as String?,
       stationId: json['stationId'] as String? ??
@@ -48,6 +53,7 @@ class ChargerModel {
       'chargerCode': chargerCode,
       'type': type,
       'status': status,
+      'onlineStatus': onlineStatus,
       if (stationName != null) 'stationName': stationName,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),

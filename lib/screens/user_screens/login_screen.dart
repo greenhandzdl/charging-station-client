@@ -133,19 +133,30 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               if (_showCaptcha) ...[
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _captchaController,
-                  decoration: const InputDecoration(
-                    labelText: '验证码',
-                    prefixIcon: Icon(Icons.security),
-                  ),
-                  validator: (v) {
-                    if (_showCaptcha && (v == null || v.trim().isEmpty)) {
-                      return '请输入验证码';
-                    }
-                    return null;
-                  },
-                ),
+                Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _captchaController,
+                            decoration: const InputDecoration(
+                              labelText: '验证码',
+                              prefixIcon: Icon(Icons.security),
+                            ),
+                            validator: (v) {
+                              if (_showCaptcha && (v == null || v.trim().isEmpty)) {
+                                return '请输入验证码';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Padding(
+                          padding: EdgeInsets.only(top: 16),
+                          child: Text('(mock)', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                        ),
+                      ],
+                    ),
               ],
               const SizedBox(height: 24),
               ElevatedButton(
