@@ -32,8 +32,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loadCaptcha() async {
     try {
-      _captchaId = await ApiService.getCaptcha();
-      _showCaptcha = true;
+      final captcha = await ApiService.getCaptcha();
+      if (mounted) {
+        setState(() {
+          _captchaId = captcha['captchaId'];
+          _showCaptcha = true;
+        });
+      }
     } catch (_) {
       // If captcha endpoint not available, proceed without it
     }
