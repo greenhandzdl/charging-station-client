@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -23,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   String? _captchaId;
   String _captchaImage = '';
+  String _captchaCode = '';
 
   @override
   void initState() {
@@ -48,6 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         setState(() {
           _captchaId = captcha['captchaId'];
           _captchaImage = captcha['image'] ?? '';
+          _captchaCode = captcha['captchaCode'] ?? '';
         });
       }
     } catch (_) {}
@@ -89,6 +92,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Uint8List _captchaImageBase64() {
+    try {
+      String data = _captchaImage.replaceFirst('data:image/png;base64,', '');
+      data = data.replaceFirst('data:image/png;base64', '');
+      return Base64Decoder().convert(data);
+    } catch (_) {
+      return Uint8List(0);
+    }
+  }
+
+  Widget _buildFallbackCaptcha() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.security, color: Colors.blue, size: 18),
+        if (_captchaCode.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Text(_captchaCode,
+              style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 6,
+                  color: Colors.blue)),
+        ],
+      ],
+    );
   }
 
   @override
@@ -186,15 +217,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: Image.memory(
-                            Base64Decoder().convert(
-                              _captchaImage.replaceFirst('data:image/png;base64,', '')),
+                            _captchaImageBase64(),
                             width: 120,
                             height: 40,
                             fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildFallbackCaptcha(),
                           ),
                         )
                       else
-                        const Icon(Icons.security, color: Colors.blue),
+                        _buildFallbackCaptcha(),
                       const Spacer(),
                       TextButton.icon(
                         icon: const Icon(Icons.refresh, size: 18),

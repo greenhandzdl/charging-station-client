@@ -127,6 +127,7 @@ class ApiService {
     return {
       'captchaId': data['captchaId'] as String? ?? '',
       'image': data['image'] as String? ?? '',
+      'captchaCode': data['captchaCode'] as String? ?? '',
     };
   }
 
