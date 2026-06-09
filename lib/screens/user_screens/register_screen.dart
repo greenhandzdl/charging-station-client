@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -21,6 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _captchaId;
+  String _captchaImage = '';
 
   @override
   void initState() {
@@ -41,8 +43,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _loadCaptcha() async {
     try {
-      _captchaId = await ApiService.getCaptcha();
-      setState(() {});
+      final captcha = await ApiService.getCaptcha();
+      if (mounted) {
+        setState(() {
+          _captchaId = captcha['captchaId'];
+          _captchaImage = captcha['image'] ?? '';
+        });
+      }
     } catch (_) {}
   }
 
@@ -165,11 +172,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 16),
               if (_captchaId != null && _captchaId!.isNotEmpty) ...[
+                // Captcha display area
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      if (_captchaImage.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.memory(
+                            Base64Decoder().convert(
+                              _captchaImage.replaceFirst('data:image/png;base64,', '')),
+                            width: 120,
+                            height: 40,
+                            fit: BoxFit.contain,
+                          ),
+                        )
+                      else
+                        const Icon(Icons.security, color: Colors.blue),
+                      const Spacer(),
+                      TextButton.icon(
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('换一张'),
+                        onPressed: _loadCaptcha,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _captchaController,
                   decoration: const InputDecoration(
-                    labelText: '验证码',
-                    prefixIcon: Icon(Icons.security),
+                    labelText: '请输入验证码',
+                    prefixIcon: Icon(Icons.edit),
+                    border: OutlineInputBorder(),
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return '请输入验证码';

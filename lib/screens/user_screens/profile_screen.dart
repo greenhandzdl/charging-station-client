@@ -10,8 +10,17 @@ import '../user_screens/maintainer_workspace_screen.dart';
 import '../admin_screens/admin_dashboard_screen.dart';
 import '../../models/user_role.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Future<void> _refreshBalance() async {
+    await context.read<AuthProvider>().refreshBalance();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +31,19 @@ class ProfileScreen extends StatelessWidget {
     final isMaintainer = role.isMaintainer;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('我的')),
-      body: ListView(
+      appBar: AppBar(
+        title: const Text('我的'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshBalance,
+            tooltip: '刷新余额',
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refreshBalance,
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -145,6 +165,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

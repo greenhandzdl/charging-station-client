@@ -118,13 +118,16 @@ class ApiService {
     return LoginResponse.fromJson(data);
   }
 
-  static Future<String> getCaptcha() async {
+  static Future<Map<String, String>> getCaptcha() async {
     final response = await http.get(
       Uri.parse('$baseUrl/captcha'),
       headers: _headers(withAuth: false),
     );
     final data = await _handleResponse(response);
-    return data['captchaId'] as String? ?? '';
+    return {
+      'captchaId': data['captchaId'] as String? ?? '',
+      'image': data['image'] as String? ?? '',
+    };
   }
 
   // ---- Password ----

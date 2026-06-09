@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/payment_model.dart';
 import '../../services/api_service.dart';
 
@@ -40,6 +42,7 @@ class _RechargeApprovalScreenState extends State<RechargeApprovalScreen> {
     try {
       await ApiService.approvePayment(paymentId);
       if (mounted) {
+        context.read<AuthProvider>().refreshBalance();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('充值已批准，余额已更新'),
@@ -90,6 +93,7 @@ class _RechargeApprovalScreenState extends State<RechargeApprovalScreen> {
     try {
       await ApiService.rejectPayment(paymentId, reason: reason);
       if (mounted) {
+        context.read<AuthProvider>().refreshBalance();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('充值已拒绝')),
         );
