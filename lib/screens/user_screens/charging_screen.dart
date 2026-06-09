@@ -228,31 +228,81 @@ class _ChargingScreenState extends State<ChargingScreen> {
             ),
           ),
 
-          if (currentRecord != null && currentRecord.status == 'COMPLETED')
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Card(
-                color: Colors.green.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.check_circle,
-                          color: Colors.green, size: 40),
-                      const SizedBox(height: 8),
-                      Text('充电完成',
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700)),
+          // 当前充电信息卡片（QR 模式，通过轮询自动刷新）
+          if (currentRecord != null) ...[
+            const SizedBox(height: 16),
+            Card(
+              color: currentRecord.status == 'COMPLETED'
+                  ? Colors.green.shade50
+                  : null,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          currentRecord.status == 'COMPLETED'
+                              ? '充电结果'
+                              : '当前充电',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                        ),
+                        if (provider.isPolling &&
+                            currentRecord.status == 'PROCESSING') ...[
+                          const Spacer(),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.green.shade600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text('实时更新中',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green.shade600)),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (currentRecord.status == 'COMPLETED') ...[
+                      Row(
+                        children: [
+                          Icon(Icons.check_circle,
+                              color: Colors.green.shade700, size: 20),
+                          const SizedBox(width: 4),
+                          Text('充电完成',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade700)),
+                        ],
+                      ),
                       const SizedBox(height: 4),
-                      Text('费用: ${currentRecord.fee} 元'),
-                      Text('电量: ${currentRecord.energyKwh} kWh'),
                     ],
-                  ),
+                    Text('电量: ${currentRecord.energyKwh} kWh'),
+                    Text('费用: ${currentRecord.fee} 元'),
+                    if (currentRecord.status == 'PROCESSING' &&
+                        provider.isPolling)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text('每 5 秒自动刷新',
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.grey.shade500)),
+                      ),
+                  ],
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
@@ -352,21 +402,72 @@ class _ChargingScreenState extends State<ChargingScreen> {
               label: Text(_isCharging ? '启动中...' : '启动充电'),
             ),
 
-          // Current charge info card
+          // 当前充电信息卡片（通过轮询自动刷新电量、费用、状态）
           if (currentRecord != null) ...[
             const SizedBox(height: 16),
             Card(
+              color: currentRecord.status == 'COMPLETED'
+                  ? Colors.green.shade50
+                  : null,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('当前充电信息',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        const Text('当前充电信息',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        if (provider.isPolling &&
+                            currentRecord.status == 'PROCESSING')
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.green.shade600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text('实时更新中',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green.shade600)),
+                            ],
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
-                    Text('状态: ${currentRecord.status}'),
+                    if (currentRecord.status == 'COMPLETED') ...[
+                      Row(
+                        children: [
+                          Icon(Icons.check_circle,
+                              color: Colors.green.shade700, size: 20),
+                          const SizedBox(width: 4),
+                          Text('充电完成',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade700)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                    ] else ...[
+                      Text('状态: ${currentRecord.status}'),
+                    ],
                     Text('电量: ${currentRecord.energyKwh} kWh'),
                     Text('费用: ${currentRecord.fee} 元'),
+                    if (currentRecord.status == 'PROCESSING' &&
+                        provider.isPolling)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text('每 5 秒自动刷新',
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.grey.shade500)),
+                      ),
                   ],
                 ),
               ),
