@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/repair_provider.dart';
-import '../../models/charger_model.dart';
-import '../../services/api_service.dart';
 
 class RepairScreen extends StatefulWidget {
   final String? initialChargerId;
@@ -15,75 +13,40 @@ class RepairScreen extends StatefulWidget {
 
 class _RepairScreenState extends State<RepairScreen> {
   final _descriptionController = TextEditingController();
-  List<ChargerModel> _chargers = [];
-  ChargerModel? _selectedCharger;
+  final _chargerCodeController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     context.read<RepairProvider>().fetchRepairs();
-    _loadChargers();
+    if (widget.initialChargerId != null) {
+      _chargerCodeController.text = widget.initialChargerId!;
+    }
   }
 
   @override
   void dispose() {
     _descriptionController.dispose();
+    _chargerCodeController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadChargers() async {
-    try {
-      // Fetch chargers across stations; for simplicity get all stations then their chargers
-      final stations = await ApiService.getStations();
-      final allChargers = <ChargerModel>[];
-      for (final station in stations) {
-        try {
-          final chargers = await ApiService.getChargers(station.id);
-          allChargers.addAll(chargers);
-        } catch (_) {
-          // skip stations that fail
-        }
-      }
-      if (mounted) {
-        setState(() => _chargers = allChargers);
-        // Auto-select charger if initialChargerId provided
-        if (widget.initialChargerId != null) {
-          final match = allChargers.where(
-            (c) => c.id == widget.initialChargerId
-                || c.chargerCode == widget.initialChargerId,
-          );
-          if (match.isNotEmpty) {
-            _selectedCharger = match.first;
-          }
-        }
-      }
-    } catch (_) {
-      // fail silently; user will see an empty dropdown
-    }
-  }
-
   Future<void> _submitRepair() async {
-    if (_selectedCharger == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请选择充电桩')),
-      );
-      return;
-    }
+    final chargerCode = _chargerCodeController.text.trim();
     final description = _descriptionController.text.trim();
-    if (description.isEmpty) {
+    if (chargerCode.isEmpty || description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请填写故障描述')),
+        const SnackBar(content: Text('请填写完整信息')),
       );
       return;
     }
     try {
       await context
           .read<RepairProvider>()
-          .submitRepair(_selectedCharger!.id, description);
-      _selectedCharger = null;
+          .submitRepair(chargerCode, description);
+      _chargerCodeController.clear();
       _descriptionController.clear();
       if (mounted) {
-        setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('报修已提交')),
         );
@@ -108,19 +71,12 @@ class _RepairScreenState extends State<RepairScreen> {
           const Text('提交报修',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          DropdownButtonFormField<ChargerModel>(
+          TextField(
+            controller: _chargerCodeController,
             decoration: const InputDecoration(
-              labelText: '选择充电桩',
+              labelText: '充电桩编号',
               border: OutlineInputBorder(),
             ),
-            initialValue: _selectedCharger,
-            items: _chargers
-                .map((c) => DropdownMenuItem(
-                      value: c,
-                      child: Text('${c.chargerCode} (${c.stationName ?? ""})'),
-                    ))
-                .toList(),
-            onChanged: (c) => setState(() => _selectedCharger = c),
           ),
           const SizedBox(height: 12),
           TextField(

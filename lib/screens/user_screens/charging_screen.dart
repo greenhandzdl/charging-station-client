@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/charging_provider.dart';
-import 'qr_scan_screen.dart';
+import 'repair_screen.dart';
 
 class ChargingScreen extends StatefulWidget {
   const ChargingScreen({super.key});
@@ -18,20 +18,10 @@ class _ChargingScreenState extends State<ChargingScreen> {
   bool _isLoadingChargers = false;
   bool _isCharging = false;
 
-  // QR scan / manual input mode
-  bool _useQrMode = false;
-  final _chargerIdController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
     _loadStations();
-  }
-
-  @override
-  void dispose() {
-    _chargerIdController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadStations() async {
@@ -64,11 +54,13 @@ class _ChargingScreenState extends State<ChargingScreen> {
     }
   }
 
-  /// Start charge via chargerId (from QR scan or manual input or station list)
-  Future<void> _startCharge(String chargerId) async {
+  Future<void> _startCharge() async {
+    if (_selectedCharger == null) return;
     setState(() => _isCharging = true);
     try {
-      await context.read<ChargingProvider>().startCharge(chargerId);
+      await context
+          .read<ChargingProvider>()
+          .startCharge(_selectedCharger!.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('充电已启动')),
@@ -108,372 +100,128 @@ class _ChargingScreenState extends State<ChargingScreen> {
     }
   }
 
-  Color _onlineStatusColor(String onlineStatus) {
-    switch (onlineStatus.toUpperCase()) {
-      case 'ONLINE':
-        return Colors.green;
-      case 'OFFLINE':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _onlineStatusLabel(String onlineStatus) {
-    switch (onlineStatus.toUpperCase()) {
-      case 'ONLINE':
-        return '在线';
-      case 'OFFLINE':
-        return '离线';
-      default:
-        return '未知';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ChargingProvider>();
     final currentRecord = provider.currentRecord;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('充电'),
-        leading: IconButton(
-          icon: const Icon(Icons.qr_code_scanner),
-          tooltip: '扫码充电',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const QrScanScreen()),
-            );
-          },
-        ),
-        actions: [
-          // Toggle between station list mode and QR scan mode
-          IconButton(
-            icon: Icon(_useQrMode ? Icons.ev_station : Icons.qr_code),
-            tooltip: _useQrMode ? '切换至站点列表' : '扫码/输入充电桩ID',
-            onPressed: () => setState(() => _useQrMode = !_useQrMode),
-          ),
-        ],
-      ),
-      body: _useQrMode ? _buildQrMode() : _buildStationMode(provider, currentRecord),
-    );
-  }
-
-  /// QR scan / manual input mode — for Mock charger interaction
-  Widget _buildQrMode() {
-    final provider = context.read<ChargingProvider>();
-    final currentRecord = provider.currentRecord;
-
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Instruction card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline,
-                      color: Colors.blue.shade700, size: 32),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      '使用 Mock 充电机上的二维码，\n或手动输入充电桩ID以启动充电',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Charger ID input
-          TextField(
-            controller: _chargerIdController,
-            decoration: const InputDecoration(
-              labelText: '充电桩ID / 编码',
-              hintText: '扫码或手动输入充电桩ID',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.qr_code_scanner),
-              helperText: 'Mock 充电机插枪后会在屏幕上显示二维码',
-            ),
-            maxLines: 1,
-          ),
-          const SizedBox(height: 24),
-
-          // Start charge button
-          FilledButton.icon(
-            onPressed: _isCharging
-                ? null
-                : () {
-                    final id = _chargerIdController.text.trim();
-                    if (id.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('请输入充电桩ID')),
-                      );
-                      return;
-                    }
-                    _startCharge(id);
-                  },
-            icon: const Icon(Icons.play_arrow),
-            label: Text(_isCharging ? '启动中...' : '启动充电'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
-              textStyle: const TextStyle(fontSize: 16),
-            ),
-          ),
-
-          // 当前充电信息卡片（QR 模式，通过轮询自动刷新）
-          if (currentRecord != null) ...[
-            const SizedBox(height: 16),
-            Card(
-              color: currentRecord.status == 'COMPLETED'
-                  ? Colors.green.shade50
-                  : null,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          currentRecord.status == 'COMPLETED'
-                              ? '充电结果'
-                              : '当前充电',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
-                        ),
-                        if (provider.isPolling &&
-                            currentRecord.status == 'PROCESSING') ...[
-                          const Spacer(),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.green.shade600,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text('实时更新中',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.green.shade600)),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (currentRecord.status == 'COMPLETED') ...[
-                      Row(
-                        children: [
-                          Icon(Icons.check_circle,
-                              color: Colors.green.shade700, size: 20),
-                          const SizedBox(width: 4),
-                          Text('充电完成',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade700)),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                    Text('电量: ${currentRecord.energyKwh} kWh'),
-                    Text('费用: ${currentRecord.fee} 元'),
-                    if (currentRecord.status == 'PROCESSING' &&
-                        provider.isPolling)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text('每 5 秒自动刷新',
-                            style: TextStyle(
-                                fontSize: 11, color: Colors.grey.shade500)),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// Standard station list mode
-  Widget _buildStationMode(
-      ChargingProvider provider, ChargeRecordModel? currentRecord) {
-    return RefreshIndicator(
-      onRefresh: _loadStations,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text('选择充电站',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          if (_isLoadingStations)
-            const Center(child: CircularProgressIndicator())
-          else
-            ...provider.stations.map((station) => Card(
-                  child: ListTile(
-                    title: Text(station.name),
-                    subtitle:
-                        Text('${station.location} | ${station.chargerCount}个桩'),
-                    trailing: Text(station.status),
-                    selected: _selectedStation?.id == station.id,
-                    onTap: () {
-                      setState(() {
-                        _selectedStation = station;
-                        _selectedCharger = null;
-                      });
-                      _loadChargers(station.id);
-                    },
-                  ),
-                )),
-          if (_selectedStation != null) ...[
-            const SizedBox(height: 16),
-            const Text('选择充电桩',
+      appBar: AppBar(title: const Text('充电')),
+      body: RefreshIndicator(
+        onRefresh: _loadStations,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('选择充电站',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            if (_isLoadingChargers)
+            if (_isLoadingStations)
               const Center(child: CircularProgressIndicator())
             else
-              ...provider.chargers.map((charger) => Card(
+              ...provider.stations.map((station) => Card(
                     child: ListTile(
-                      title:
-                          Text('${charger.chargerCode} (${charger.type})'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('状态: ${charger.status}'),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.circle,
-                                size: 10,
-                                color: _onlineStatusColor(charger.onlineStatus),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _onlineStatusLabel(charger.onlineStatus),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: _onlineStatusColor(charger.onlineStatus),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      selected: _selectedCharger?.id == charger.id,
-                      onTap: charger.status == 'IDLE'
-                          ? () => setState(
-                                  () => _selectedCharger = charger)
-                          : null,
+                      title: Text(station.name),
+                      subtitle: Text(
+                          '${station.location} | ${station.chargerCount}个桩'),
+                      trailing: Text(station.status),
+                      selected: _selectedStation?.id == station.id,
+                      onTap: () {
+                        setState(() {
+                          _selectedStation = station;
+                          _selectedCharger = null;
+                        });
+                        _loadChargers(station.id);
+                      },
                     ),
                   )),
-          ],
-          const SizedBox(height: 24),
-
-          // Charge control buttons
-          if (currentRecord != null &&
-              currentRecord.status == 'PROCESSING')
-            ElevatedButton.icon(
-              onPressed: _isCharging ? null : _stopCharge,
-              icon: const Icon(Icons.stop),
-              label: Text(_isCharging ? '处理中...' : '结束充电'),
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            )
-          else
-            ElevatedButton.icon(
-              onPressed: (_selectedCharger == null || _isCharging)
-                  ? null
-                  : () => _startCharge(_selectedCharger!.id),
-              icon: const Icon(Icons.play_arrow),
-              label: Text(_isCharging ? '启动中...' : '启动充电'),
-            ),
-
-          // 当前充电信息卡片（通过轮询自动刷新电量、费用、状态）
-          if (currentRecord != null) ...[
-            const SizedBox(height: 16),
-            Card(
-              color: currentRecord.status == 'COMPLETED'
-                  ? Colors.green.shade50
-                  : null,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text('当前充电信息',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const Spacer(),
-                        if (provider.isPolling &&
-                            currentRecord.status == 'PROCESSING')
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.green.shade600,
+            if (_selectedStation != null) ...[
+              const SizedBox(height: 16),
+              const Text('选择充电桩',
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              if (_isLoadingChargers)
+                const Center(child: CircularProgressIndicator())
+              else
+                ...provider.chargers.map((charger) => Card(
+                      child: ListTile(
+                        title: Text(
+                            '${charger.chargerCode} (${charger.type})'),
+                        subtitle: Text('状态: ${charger.status}'),
+                        selected: _selectedCharger?.id == charger.id,
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (v) {
+                            if (v == 'repair') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => RepairScreen(
+                                    initialChargerId: charger.id,
+                                  ),
                                 ),
+                              );
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'repair',
+                              child: ListTile(
+                                leading:
+                                    Icon(Icons.build, size: 20),
+                                title: Text('报修'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
                               ),
-                              const SizedBox(width: 4),
-                              Text('实时更新中',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.green.shade600)),
-                            ],
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (currentRecord.status == 'COMPLETED') ...[
-                      Row(
-                        children: [
-                          Icon(Icons.check_circle,
-                              color: Colors.green.shade700, size: 20),
-                          const SizedBox(width: 4),
-                          Text('充电完成',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade700)),
-                        ],
+                            ),
+                          ],
+                        ),
+                        onTap: charger.status == 'IDLE'
+                            ? () => setState(
+                                    () => _selectedCharger = charger)
+                            : null,
                       ),
-                      const SizedBox(height: 4),
-                    ] else ...[
+                    )),
+            ],
+            const SizedBox(height: 24),
+            if (currentRecord != null &&
+                currentRecord.status?.toUpperCase() == 'PROCESSING')
+              ElevatedButton.icon(
+                onPressed: _isCharging ? null : _stopCharge,
+                icon: const Icon(Icons.stop),
+                label: Text(_isCharging ? '处理中...' : '结束充电'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: (_selectedCharger == null || _isCharging)
+                    ? null
+                    : _startCharge,
+                icon: const Icon(Icons.play_arrow),
+                label: Text(_isCharging ? '启动中...' : '启动充电'),
+              ),
+            if (currentRecord != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('当前充电信息',
+                          style:
+                              TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
                       Text('状态: ${currentRecord.status}'),
+                      Text('电量: ${currentRecord.energyKwh} kWh'),
+                      Text('费用: ${currentRecord.fee} 元'),
                     ],
-                    Text('电量: ${currentRecord.energyKwh} kWh'),
-                    Text('费用: ${currentRecord.fee} 元'),
-                    if (currentRecord.status == 'PROCESSING' &&
-                        provider.isPolling)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text('每 5 秒自动刷新',
-                            style: TextStyle(
-                                fontSize: 11, color: Colors.grey.shade500)),
-                      ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

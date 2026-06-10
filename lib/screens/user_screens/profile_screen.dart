@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../user_screens/payment_screen.dart';
 import '../user_screens/payment_entry_screen.dart';
-import '../user_screens/repair_screen.dart';
 import '../user_screens/charger_status_screen.dart';
 import '../user_screens/login_screen.dart';
 import '../user_screens/maintainer_workspace_screen.dart';
@@ -133,19 +132,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => const ChargerStatusScreen()),
-                );
-              },
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.build),
-              title: const Text('报修'),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RepairScreen()),
                 );
               },
             ),
