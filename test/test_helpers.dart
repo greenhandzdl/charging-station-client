@@ -48,6 +48,7 @@ ChargerModel createMockCharger({
   String chargerCode = 'CC-001',
   String type = 'FAST',
   String status = 'IDLE',
+  String onlineStatus = 'ONLINE',
 }) {
   return ChargerModel(
     id: id,
@@ -55,6 +56,7 @@ ChargerModel createMockCharger({
     chargerCode: chargerCode,
     type: type,
     status: status,
+    onlineStatus: onlineStatus,
   );
 }
 
