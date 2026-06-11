@@ -90,9 +90,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: isSaving
-                      ? null
-                      : () => Navigator.pop(ctx, false),
+                  onPressed:
+                      isSaving ? null : () => Navigator.pop(ctx, false),
                   child: const Text('取消'),
                 ),
                 FilledButton(
@@ -148,6 +147,97 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
+  Future<void> _showRoleDialog(UserModel user) async {
+    String selectedRole = user.role;
+    bool isSaving = false;
+
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('修改角色 - ${user.name}'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<String>(
+                    title: const Text('用户'),
+                    subtitle: const Text('普通用户，可使用充电功能'),
+                    value: 'USER',
+                    groupValue: selectedRole,
+                    onChanged: (v) {
+                      if (v != null) setDialogState(() => selectedRole = v);
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('管理员'),
+                    subtitle: const Text('管理员，可管理系统和用户'),
+                    value: 'ADMIN',
+                    groupValue: selectedRole,
+                    onChanged: (v) {
+                      if (v != null) setDialogState(() => selectedRole = v);
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('维修员'),
+                    subtitle: const Text('维修员，可处理报修工单'),
+                    value: 'MAINTAINER',
+                    groupValue: selectedRole,
+                    onChanged: (v) {
+                      if (v != null) setDialogState(() => selectedRole = v);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed:
+                      isSaving ? null : () => Navigator.pop(ctx, false),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          setDialogState(() => isSaving = true);
+                          try {
+                            await ApiService.changeRole(
+                                user.id, selectedRole);
+                            await _loadUsers();
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('角色已更新')),
+                              );
+                            }
+                            Navigator.pop(ctx, true);
+                          } catch (e) {
+                            setDialogState(() => isSaving = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('角色更新失败: $e')),
+                            );
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('确认'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _deleteUser(UserModel user) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -181,6 +271,31 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           SnackBar(content: Text('删除失败: $e')),
         );
       }
+    }
+  }
+
+  Color _roleColor(String role) {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+      case 'SUPER_ADMIN':
+        return Colors.red;
+      case 'MAINTAINER':
+        return Colors.orange;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  String _roleLabel(String role) {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return '管理员';
+      case 'SUPER_ADMIN':
+        return '超级管理员';
+      case 'MAINTAINER':
+        return '维修员';
+      default:
+        return '用户';
     }
   }
 
@@ -227,11 +342,37 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                             return Card(
                               child: ListTile(
                                 title: Text('${u.name} (${u.phone})'),
-                                subtitle: Text('角色: ${u.role}'),
+                                subtitle: Row(
+                                  children: [
+                                    Text('余额: ${u.balance}元'),
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: _roleColor(u.role)
+                                            .withOpacity(0.2),
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        _roleLabel(u.role),
+                                        style: TextStyle(
+                                          color: _roleColor(u.role),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 trailing: PopupMenuButton<String>(
                                   onSelected: (v) {
                                     if (v == 'edit') {
                                       _showUserEditDialog(u);
+                                    }
+                                    if (v == 'role') {
+                                      _showRoleDialog(u);
                                     }
                                     if (v == 'delete') {
                                       _deleteUser(u);
@@ -241,9 +382,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     const PopupMenuItem(
                                       value: 'edit',
                                       child: ListTile(
-                                        leading:
-                                            Icon(Icons.edit, size: 20),
+                                        leading: Icon(Icons.edit, size: 20),
                                         title: Text('编辑'),
+                                        dense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'role',
+                                      child: ListTile(
+                                        leading: Icon(Icons.admin_panel_settings,
+                                            size: 20),
+                                        title: Text('修改角色'),
                                         dense: true,
                                         contentPadding: EdgeInsets.zero,
                                       ),
@@ -254,8 +404,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                         leading: Icon(Icons.delete,
                                             size: 20, color: Colors.red),
                                         title: Text('删除',
-                                            style: TextStyle(
-                                                color: Colors.red)),
+                                            style:
+                                                TextStyle(color: Colors.red)),
                                         dense: true,
                                         contentPadding: EdgeInsets.zero,
                                       ),

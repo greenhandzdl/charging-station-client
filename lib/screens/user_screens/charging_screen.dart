@@ -121,8 +121,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
               ...provider.stations.map((station) => Card(
                     child: ListTile(
                       title: Text(station.name),
-                      subtitle: Text(
-                          '${station.location} | ${station.chargerCount}个桩'),
+                      subtitle: Text('${station.location} | ${station.chargerCount}个桩'),
                       trailing: Text(station.status),
                       selected: _selectedStation?.id == station.id,
                       onTap: () {
@@ -137,27 +136,53 @@ class _ChargingScreenState extends State<ChargingScreen> {
             if (_selectedStation != null) ...[
               const SizedBox(height: 16),
               const Text('选择充电桩',
-                  style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold)),
+                  style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               if (_isLoadingChargers)
                 const Center(child: CircularProgressIndicator())
               else
                 ...provider.chargers.map((charger) => Card(
                       child: ListTile(
-                        title: Text(
-                            '${charger.chargerCode} (${charger.type})'),
-                        subtitle: Text('状态: ${charger.status}'),
+                        title: Text('${charger.chargerCode} (${charger.type})'),
+                        subtitle: Row(
+                          children: [
+                            Text('状态: ${charger.status}'),
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.circle,
+                              size: 10,
+                              color: charger.onlineStatus == 'ONLINE'
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              charger.onlineStatus == 'ONLINE' ? '在线' : '离线',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: charger.onlineStatus == 'ONLINE'
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
                         selected: _selectedCharger?.id == charger.id,
+                        enabled: charger.status == 'IDLE' &&
+                            charger.onlineStatus == 'ONLINE',
+                        onTap: charger.status == 'IDLE' &&
+                                charger.onlineStatus == 'ONLINE'
+                            ? () => setState(
+                                    () => _selectedCharger = charger)
+                            : null,
                         trailing: PopupMenuButton<String>(
                           onSelected: (v) {
                             if (v == 'repair') {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => RepairScreen(
-                                    initialChargerId: charger.id,
-                                  ),
+                                  builder: (_) => const RepairScreen(),
                                 ),
                               );
                             }
@@ -166,8 +191,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
                             const PopupMenuItem(
                               value: 'repair',
                               child: ListTile(
-                                leading:
-                                    Icon(Icons.build, size: 20),
+                                leading: Icon(Icons.build, size: 20),
                                 title: Text('报修'),
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
@@ -175,22 +199,16 @@ class _ChargingScreenState extends State<ChargingScreen> {
                             ),
                           ],
                         ),
-                        onTap: charger.status == 'IDLE'
-                            ? () => setState(
-                                    () => _selectedCharger = charger)
-                            : null,
                       ),
                     )),
             ],
             const SizedBox(height: 24),
-            if (currentRecord != null &&
-                currentRecord.status?.toUpperCase() == 'PROCESSING')
+            if (currentRecord != null && currentRecord.status == 'processing')
               ElevatedButton.icon(
                 onPressed: _isCharging ? null : _stopCharge,
                 icon: const Icon(Icons.stop),
                 label: Text(_isCharging ? '处理中...' : '结束充电'),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               )
             else
               ElevatedButton.icon(
@@ -209,8 +227,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('当前充电信息',
-                          style:
-                              TextStyle(fontWeight: FontWeight.bold)),
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Text('状态: ${currentRecord.status}'),
                       Text('电量: ${currentRecord.energyKwh} kWh'),

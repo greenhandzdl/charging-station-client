@@ -13,9 +13,16 @@ class _ChargerStatusScreenState extends State<ChargerStatusScreen> {
   final _searchController = TextEditingController();
   List<StationModel> _stations = [];
   List<ChargerModel> _chargers = [];
-  bool _isSearching = false;
-  bool _isLoadingChargers = false;
+    bool _isSearching = false;
+  bool _isLoading = false;
+  bool _isSearchMode = false;
   String? _selectedStationId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllStations();
+  }
 
   @override
   void dispose() {
@@ -23,27 +30,92 @@ class _ChargerStatusScreenState extends State<ChargerStatusScreen> {
     super.dispose();
   }
 
-  Future<void> _searchStations() async {
-    final name = _searchController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入充电站名称')),
-      );
+  Future<void> _loadAllStations() async {
+    setState(() => _isLoading = true);
+    try {
+      final allStations = await ApiService.getStations();
+      if (mounted) {
+        setState(() {
+          _stations =
+              allStations.where((s) => s.status != 'MAINTENANCE').toList();
+          _isSearchMode = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('加载充电站失败: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _search(String keyword) async {
+    final query = keyword.trim();
+    if (query.isEmpty) {
+      // Clear search and show all stations
+      setState(() {
+        _isSearchMode = false;
+        _chargers = [];
+        _selectedStationId = null;
+      });
       return;
     }
+
     setState(() {
       _isSearching = true;
-      _stations = [];
       _chargers = [];
       _selectedStationId = null;
     });
+
     try {
-      final results = await ApiService.searchStations(name);
+      // Search stations by name
+      final stationResults = await ApiService.searchStations(query);
+      // Filter out MAINTENANCE stations
+      final filteredStations =
+          stationResults.where((s) => s.status != 'MAINTENANCE').toList();
+
+      // Search chargers across all stations — we do this by getting chargers
+      // for each station and filtering by chargerCode
+      final allStations = await ApiService.getStations();
+      final allChargerResults = <ChargerModel>[];
+      for (final station in allStations) {
+        if (station.status == 'MAINTENANCE') continue;
+        try {
+          final chargers = await ApiService.getChargers(station.id);
+          final matched = chargers
+              .where((c) =>
+                  c.chargerCode.toLowerCase().contains(query.toLowerCase()))
+              .map((c) => ChargerModel(
+                    id: c.id,
+                    stationId: c.stationId,
+                    chargerCode: c.chargerCode,
+                    type: c.type,
+                    status: c.status,
+                    onlineStatus: c.onlineStatus,
+                    stationName: station.name,
+                    createdAt: c.createdAt,
+                    updatedAt: c.updatedAt,
+                  ))
+              .toList();
+          allChargerResults.addAll(matched);
+        } catch (_) {
+          // Skip stations that fail to load chargers
+        }
+      }
+
       if (mounted) {
-        setState(() => _stations = results);
-        if (results.isEmpty) {
+        setState(() {
+          _stations = filteredStations;
+          _chargers = allChargerResults;
+          _isSearchMode = true;
+        });
+
+        if (filteredStations.isEmpty && allChargerResults.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('未找到匹配的充电站')),
+            const SnackBar(content: Text('未找到匹配的结果')),
           );
         }
       }
@@ -60,7 +132,7 @@ class _ChargerStatusScreenState extends State<ChargerStatusScreen> {
 
   Future<void> _loadChargers(String stationId) async {
     setState(() {
-      _isLoadingChargers = true;
+      _isLoading = true;
       _selectedStationId = stationId;
       _chargers = [];
     });
@@ -74,7 +146,7 @@ class _ChargerStatusScreenState extends State<ChargerStatusScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoadingChargers = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -102,142 +174,6 @@ class _ChargerStatusScreenState extends State<ChargerStatusScreen> {
       default:
         return '未知';
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('充电桩状态查询')),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      labelText: '充电站名称',
-                      hintText: '输入充电站名称搜索',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onSubmitted: (_) => _searchStations(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _isSearching ? null : _searchStations,
-                  child: _isSearching
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('搜索'),
-                ),
-              ],
-            ),
-          ),
-          // Station list
-          if (_stations.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('搜索结果',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  ..._stations.map((station) => Card(
-                        color: _selectedStationId == station.id
-                            ? Colors.blue.shade50
-                            : null,
-                        child: ListTile(
-                          title: Text(station.name),
-                          subtitle: Text(station.location),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => _loadChargers(station.id),
-                        ),
-                      )),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          // Charger status list
-          if (_selectedStationId != null)
-            Expanded(
-              child: _isLoadingChargers
-                  ? const Center(child: CircularProgressIndicator())
-                  : _chargers.isEmpty
-                      ? const Center(child: Text('该站点暂无充电桩'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _chargers.length,
-                          itemBuilder: (_, i) {
-                            final charger = _chargers[i];
-                            return Card(
-                              child: ListTile(
-                                leading: Icon(
-                                  Icons.ev_station,
-                                  color: _statusColor(charger.status),
-                                  size: 32,
-                                ),
-                                title: Text('充电桩编号: ${charger.chargerCode}'),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('类型: ${_typeLabel(charger.type)}'),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 12,
-                                          height: 12,
-                                          decoration: BoxDecoration(
-                                            color: _statusColor(charger.status),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          _statusLabel(charger.status),
-                                          style: TextStyle(
-                                            color:
-                                                _statusColor(charger.status),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Icon(
-                                          Icons.circle,
-                                          size: 10,
-                                          color: _onlineStatusColor(charger.onlineStatus),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          _onlineStatusLabel(charger.onlineStatus),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: _onlineStatusColor(charger.onlineStatus),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                isThreeLine: true,
-                              ),
-                            );
-                          },
-                        ),
-            ),
-        ],
-      ),
-    );
   }
 
   Color _onlineStatusColor(String onlineStatus) {
@@ -275,5 +211,196 @@ class _ChargerStatusScreenState extends State<ChargerStatusScreen> {
       default:
         return type;
     }
+  }
+
+  /// Build a charger status card
+  Widget _buildChargerCard(ChargerModel charger, {bool showStationName = false}) {
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          Icons.ev_station,
+          color: _statusColor(charger.status),
+          size: 32,
+        ),
+        title: Row(
+          children: [
+            Text('充电桩: ${charger.chargerCode}'),
+            if (showStationName && charger.stationName != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  charger.stationName!,
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ),
+            ],
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('类型: ${_typeLabel(charger.type)}'),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: _statusColor(charger.status),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _statusLabel(charger.status),
+                  style: TextStyle(
+                    color: _statusColor(charger.status),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(
+                  Icons.circle,
+                  size: 10,
+                  color: _onlineStatusColor(charger.onlineStatus),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _onlineStatusLabel(charger.onlineStatus),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _onlineStatusColor(charger.onlineStatus),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        isThreeLine: true,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('充电桩状态查询')),
+      body: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: '搜索',
+                      hintText: '充电站名称或充电桩编号',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onSubmitted: (_) => _search(_searchController.text),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _isSearching
+                      ? null
+                      : () => _search(_searchController.text),
+                  child: _isSearching
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('搜索'),
+                ),
+              ],
+            ),
+          ),
+          // Results
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                    onRefresh: _searchController.text.isEmpty && !_isSearchMode
+                        ? _loadAllStations
+                        : () => _search(_searchController.text),
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        // Show charger results in search mode (mixed results)
+                        if (_isSearchMode && _chargers.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 4),
+                            child: Text('[充电桩]',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue)),
+                          ),
+                          ..._chargers
+                              .map((c) => _buildChargerCard(c, showStationName: true)),
+                          const SizedBox(height: 16),
+                        ],
+                        // Show station results
+                        if (_stations.isNotEmpty) ...[
+                          if (_isSearchMode || _chargers.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text('[充电站]',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green)),
+                            ),
+                          ..._stations.map((station) => Card(
+                                color: _selectedStationId == station.id
+                                    ? Colors.blue.shade50
+                                    : null,
+                                child: ListTile(
+                                  title: Text(station.name),
+                                  subtitle: Text(station.location),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () => _loadChargers(station.id),
+                                ),
+                              )),
+                          const SizedBox(height: 16),
+                        ],
+                        // Show chargers for selected station (not search mode)
+                        if (_selectedStationId != null &&
+                            !_isSearchMode &&
+                            _chargers.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 4),
+                            child: Text('充电桩列表',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                          ..._chargers
+                              .map((c) => _buildChargerCard(c)),
+                        ],
+                        if (_stations.isEmpty && _chargers.isEmpty && !_isLoading)
+                          const Padding(
+                            padding: EdgeInsets.all(32),
+                            child: Center(child: Text('暂无数据')),
+                          ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }
