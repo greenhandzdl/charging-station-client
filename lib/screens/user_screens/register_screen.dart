@@ -41,7 +41,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _loadCaptcha() async {
     try {
-      _captchaId = await ApiService.getCaptcha();
+      final captcha = await ApiService.getCaptcha();
+      _captchaId = captcha['captchaId'];
       setState(() {});
     } catch (_) {}
   }

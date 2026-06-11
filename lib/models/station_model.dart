@@ -4,6 +4,8 @@ class StationModel {
   final String location;
   final int chargerCount;
   final String status;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   StationModel({
     required this.id,
@@ -11,6 +13,8 @@ class StationModel {
     required this.location,
     required this.chargerCount,
     required this.status,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory StationModel.fromJson(Map<String, dynamic> json) {
@@ -21,7 +25,13 @@ class StationModel {
       chargerCount: (json['chargerCount'] as num?)?.toInt() ??
           (json['charger_count'] as num?)?.toInt() ??
           0,
-      status: json['status'] as String? ?? 'unknown',
+      status: json['status'] as String? ?? 'NORMAL',
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -32,6 +42,8 @@ class StationModel {
       'location': location,
       'chargerCount': chargerCount,
       'status': status,
+      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
     };
   }
 }

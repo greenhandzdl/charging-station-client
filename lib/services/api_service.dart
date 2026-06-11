@@ -31,10 +31,37 @@ class ApiService {
     }
     throw ApiException(
       statusCode: response.statusCode,
-      message: body['error'] as String? ??
-          body['message'] as String? ??
-          '请求失败 ($response.statusCode)',
+      message: _extractErrorMessage(body, response.statusCode),
     );
+  }
+
+  /// Helper: parse error from the response body.
+  static String _extractErrorMessage(
+      Map<String, dynamic> body, int statusCode) {
+    final error = body['error'];
+    if (error is Map<String, dynamic>) {
+      final msg = error['message'] as String?;
+      if (msg != null && msg.isNotEmpty) return msg;
+    }
+    if (error is String && error.isNotEmpty) return error;
+    final msg = body['message'] as String?;
+    if (msg != null && msg.isNotEmpty) return msg;
+    return '请求失败 ($statusCode)';
+  }
+
+  /// Helper: check for error in GET-list endpoints. Returns parsed body if successful.
+  static Map<String, dynamic> _checkForError(
+      http.Response response, String fallbackMsg) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _extractErrorMessage(body, response.statusCode),
+      );
+    }
+    return {};
   }
 
   // ---- Auth ----
@@ -89,13 +116,17 @@ class ApiService {
     return LoginResponse.fromJson(data);
   }
 
-  static Future<String> getCaptcha() async {
+  static Future<Map<String, String>> getCaptcha() async {
     final response = await http.get(
       Uri.parse('$baseUrl/captcha'),
       headers: _headers(withAuth: false),
     );
     final data = await _handleResponse(response);
-    return data['captchaId'] as String? ?? '';
+    return {
+      'captchaId': data['captchaId'] as String? ?? '',
+      'image': data['image'] as String? ?? '',
+      'captchaCode': data['captchaCode'] as String? ?? '',
+    };
   }
 
   // ---- Password ----
@@ -203,23 +234,14 @@ class ApiService {
         .toList();
   }
 
-  // ---- Station / Charger ----
-  static Future<List<StationModel>> getStations() async {
+  // ---- Stations search ----
+  static Future<List<StationModel>> searchStations(String name) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/stations'),
+      Uri.parse(
+          '$baseUrl/stations/search?name=${Uri.encodeComponent(name)}'),
       headers: _headers(),
     );
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final body = response.body.isNotEmpty
-          ? jsonDecode(response.body) as Map<String, dynamic>
-          : <String, dynamic>{};
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
-      );
-    }
+    _checkForError(response, '搜索充电站失败');
     final list = response.body.isNotEmpty
         ? jsonDecode(response.body) as List<dynamic>
         : <dynamic>[];
@@ -228,28 +250,112 @@ class ApiService {
         .toList();
   }
 
+  // ---- Station CRUD ----
+  static Future<List<StationModel>> getStations() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/stations'),
+      headers: _headers(),
+    );
+    _checkForError(response, '获取充电站列表失败');
+    final list = response.body.isNotEmpty
+        ? jsonDecode(response.body) as List<dynamic>
+        : <dynamic>[];
+    return list
+        .map((e) => StationModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<StationModel> createStation(
+      Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/stations'),
+      headers: _headers(),
+      body: jsonEncode(data),
+    );
+    final result = await _handleResponse(response);
+    return StationModel.fromJson(result);
+  }
+
+  static Future<StationModel> updateStation(
+      String id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/stations/$id'),
+      headers: _headers(),
+      body: jsonEncode(data),
+    );
+    final result = await _handleResponse(response);
+    return StationModel.fromJson(result);
+  }
+
+  static Future<void> deleteStation(String id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/stations/$id'),
+      headers: _headers(),
+    );
+    await _handleResponse(response);
+  }
+
+  // ---- Charger CRUD ----
   static Future<List<ChargerModel>> getChargers(String stationId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/chargers?stationId=$stationId'),
       headers: _headers(),
     );
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final body = response.body.isNotEmpty
-          ? jsonDecode(response.body) as Map<String, dynamic>
-          : <String, dynamic>{};
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: body['error'] as String? ??
-            body['message'] as String? ??
-            '请求失败 (${response.statusCode})',
-      );
-    }
+    _checkForError(response, '获取充电桩列表失败');
     final list = response.body.isNotEmpty
         ? jsonDecode(response.body) as List<dynamic>
         : <dynamic>[];
     return list
         .map((e) => ChargerModel.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  static Future<Map<String, dynamic>> getChargerByCode(String code) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/chargers/by-code/$code'),
+      headers: _headers(),
+    );
+    return await _handleResponse(response);
+  }
+
+  static Future<ChargerModel> createCharger(
+      Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/chargers'),
+      headers: _headers(),
+      body: jsonEncode(data),
+    );
+    final result = await _handleResponse(response);
+    return ChargerModel.fromJson(result);
+  }
+
+  static Future<ChargerModel> updateCharger(
+      String id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/chargers/$id'),
+      headers: _headers(),
+      body: jsonEncode(data),
+    );
+    final result = await _handleResponse(response);
+    return ChargerModel.fromJson(result);
+  }
+
+  static Future<void> deleteCharger(String id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/chargers/$id'),
+      headers: _headers(),
+    );
+    await _handleResponse(response);
+  }
+
+  // ---- Pay arrears ----
+  static Future<void> payArrears(String recordId, String method) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/payments/pay-arrears'),
+      headers: _headers(),
+      body: jsonEncode({'recordId': recordId, 'method': method}),
+    );
+    await _handleResponse(response);
   }
 
   // ---- Balance ----
@@ -466,6 +572,20 @@ class ApiService {
   }
 
   // ---- User Management (Admin) ----
+  static Future<List<UserModel>> getUsers() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/users'),
+      headers: _headers(),
+    );
+    _checkForError(response, '获取用户列表失败');
+    final list = response.body.isNotEmpty
+        ? jsonDecode(response.body) as List<dynamic>
+        : <dynamic>[];
+    return list
+        .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   static Future<void> changeRole(
       String userId, String newRole) async {
     final response = await http.put(

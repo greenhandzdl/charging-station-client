@@ -15,6 +15,11 @@ class AuthProvider extends ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null && _accessToken != null;
 
+  UserRole get userRole {
+    if (_currentUser == null) return UserRole.user;
+    return UserRole.fromString(_currentUser!.role);
+  }
+
   Future<void> login(String phone, String password,
       {String? captchaId, String? captchaCode}) async {
     final loginResponse = await ApiService.login(
@@ -65,7 +70,10 @@ class AuthProvider extends ChangeNotifier {
           await ApiService.refreshToken(_refreshToken!);
       _accessToken = loginResponse.accessToken;
       _refreshToken = loginResponse.refreshToken;
-      _currentUser = loginResponse.user;
+      // Backend refresh response may omit user — preserve existing user data
+      if (loginResponse.user.id.isNotEmpty) {
+        _currentUser = loginResponse.user;
+      }
       ApiService.setAccessToken(_accessToken);
       await _persistTokens();
       notifyListeners();
@@ -78,16 +86,37 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _persistTokens() async {
     if (_accessToken != null) {
-      await _secureStorage.write(key: 'access_token', value: _accessToken);
+      await _secureStorage.write(
+          key: 'access_token', value: _accessToken);
     }
     if (_refreshToken != null) {
-      await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+      await _secureStorage.write(
+          key: 'refresh_token', value: _refreshToken);
     }
   }
 
   Future<void> _clearPersistedTokens() async {
     await _secureStorage.delete(key: 'access_token');
     await _secureStorage.delete(key: 'refresh_token');
+  }
+
+  Future<void> refreshBalance() async {
+    try {
+      final balance = await ApiService.getBalance();
+      if (_currentUser != null) {
+        _currentUser = UserModel(
+          id: _currentUser!.id,
+          name: _currentUser!.name,
+          phone: _currentUser!.phone,
+          plateNumber: _currentUser!.plateNumber,
+          role: _currentUser!.role,
+          balance: balance,
+        );
+        notifyListeners();
+      }
+    } catch (_) {
+      // Non-fatal: balance refresh failure should not block UI
+    }
   }
 
   Future<bool> tryAutoLogin() async {

@@ -96,7 +96,7 @@ class _RepairScreenState extends State<RepairScreen> {
           else
             ...provider.repairs.map((r) => Card(
                   child: ListTile(
-                    title: Text(r.chargerCode),
+                    title: Text(r.chargerCode ?? '未知'),
                     subtitle: Text(
                         '${r.description}\n${r.status} | ${r.reportedAt}'),
                     isThreeLine: true,

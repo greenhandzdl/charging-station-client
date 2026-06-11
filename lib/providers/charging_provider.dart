@@ -13,7 +13,9 @@ class ChargingProvider extends ChangeNotifier {
 
   Future<void> fetchStations() async {
     try {
-      _stations = await ApiService.getStations();
+      final allStations = await ApiService.getStations();
+      _stations =
+          allStations.where((s) => s.status != 'MAINTENANCE').toList();
       notifyListeners();
     } catch (e) {
       rethrow;

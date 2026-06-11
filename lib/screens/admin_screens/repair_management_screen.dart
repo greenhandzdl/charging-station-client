@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/repair_provider.dart';
+import '../../models/repair_model.dart';
 
 class RepairManagementScreen extends StatefulWidget {
   const RepairManagementScreen({super.key});
@@ -11,6 +13,8 @@ class RepairManagementScreen extends StatefulWidget {
 }
 
 class _RepairManagementScreenState extends State<RepairManagementScreen> {
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -18,13 +22,13 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
   }
 
   Future<void> _handleAction(
-      String repairId, RepairAction action, {String? reason}) async {
+      String repairId, RepairAction action,
+      {String? reason, String? maintainerId}) async {
     try {
       final provider = context.read<RepairProvider>();
       switch (action) {
         case RepairAction.assign:
-          // In a real app, show user picker
-          await provider.assignRepair(repairId, 'maintainer-id');
+          await provider.assignRepair(repairId, maintainerId ?? '');
         case RepairAction.resolve:
           await provider.resolveRepair(repairId);
         case RepairAction.close:
@@ -51,81 +55,169 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<RepairProvider>();
+    final auth = context.watch<AuthProvider>();
+    final role = auth.userRole;
+    final isMaintainer = role.isMaintainer;
+    final isAdmin = role.isAdmin;
+    final currentUserId = auth.currentUser?.id ?? '';
+
+    List<RepairModel> displayedRepairs = provider.repairs;
+    if (isMaintainer) {
+      displayedRepairs = provider.repairs
+          .where((r) => r.status == 'OPEN' || r.handledBy == currentUserId)
+          .toList();
+    }
+
+    // Apply search filter
+    final query = _searchQuery.toLowerCase().trim();
+    if (query.isNotEmpty) {
+      displayedRepairs = displayedRepairs.where((r) {
+        return (r.chargerCode?.toLowerCase().contains(query) ?? false) ||
+            r.description.toLowerCase().contains(query);
+      }).toList();
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('报修管理')),
       body: RefreshIndicator(
         onRefresh: () => provider.fetchRepairs(),
-        child: provider.repairs.isEmpty
-            ? const Center(child: Text('暂无报修记录'))
-            : ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: provider.repairs.length,
-                itemBuilder: (_, i) {
-                  final r = provider.repairs[i];
-                  return Card(
-                    child: ExpansionTile(
-                      title: Text('${r.chargerCode} - ${r.status}'),
-                      subtitle: Text(r.description),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.stretch,
-                            children: [
-                              Text('报修人: ${r.reporterName}'),
-                              Text('时间: ${r.reportedAt}'),
-                              const SizedBox(height: 8),
-                              if (r.status == 'open') ...[
-                                ElevatedButton(
-                                  onPressed: () =>
-                                      _handleAction(r.id,
-                                          RepairAction.assign),
-                                  child: const Text('分配维修人员'),
-                                ),
-                                const SizedBox(height: 4),
-                                ElevatedButton(
-                                  onPressed: () =>
-                                      _handleAction(r.id,
-                                          RepairAction.close),
-                                  child:
-                                      const Text('直接关闭'),
-                                ),
-                              ],
-                              if (r.status == 'in_progress')
-                                ElevatedButton(
-                                  onPressed: () =>
-                                      _handleAction(r.id,
-                                          RepairAction.resolve),
-                                  child:
-                                      const Text('标记维修完成'),
-                                ),
-                              if (r.status == 'resolved') ...[
-                                ElevatedButton(
-                                  onPressed: () =>
-                                      _handleAction(r.id,
-                                          RepairAction.close),
-                                  child:
-                                      const Text('审核通过 (关闭)'),
-                                ),
-                                const SizedBox(height: 4),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.orange,
-                                  ),
-                                  onPressed: () =>
-                                      _showRejectDialog(r.id),
-                                  child: const Text('退回'),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: '搜索充电桩编号或描述',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                ),
+                onChanged: (value) {
+                  setState(() => _searchQuery = value);
                 },
               ),
+            ),
+            Expanded(
+              child: displayedRepairs.isEmpty
+                  ? const Center(child: Text('暂无报修记录'))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(8),
+                      itemCount: displayedRepairs.length,
+                      itemBuilder: (_, i) {
+                        final r = displayedRepairs[i];
+                        return Card(
+                          child: ExpansionTile(
+                            title:
+                                Text('${r.chargerCode ?? "未知"} - ${r.status}'),
+                            subtitle: Text(r.description),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text('报修人: ${r.reporterName ?? "未知"}'),
+                                    Text('时间: ${r.reportedAt}'),
+                                    const SizedBox(height: 8),
+                                    if (isAdmin &&
+                                        r.status == 'OPEN') ...[
+                                      ElevatedButton(
+                                        onPressed: () =>
+                                            _showAssignDialog(r.id),
+                                        child: const Text('分配维修人员'),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      ElevatedButton(
+                                        onPressed: () => _handleAction(
+                                            r.id, RepairAction.close),
+                                        child: const Text('直接关闭'),
+                                      ),
+                                    ],
+                                    if (isMaintainer &&
+                                        r.status == 'OPEN')
+                                      ElevatedButton(
+                                        onPressed: () => _handleAction(
+                                            r.id,
+                                            RepairAction.assign,
+                                            maintainerId: currentUserId),
+                                        child: const Text('接单'),
+                                      ),
+                                    if (r.status == 'IN_PROGRESS' &&
+                                        (isAdmin ||
+                                            r.handledBy == currentUserId))
+                                      ElevatedButton(
+                                        onPressed: () => _handleAction(
+                                            r.id, RepairAction.resolve),
+                                        child: const Text('标记维修完成'),
+                                      ),
+                                    if (isAdmin &&
+                                        r.status == 'RESOLVED') ...[
+                                      ElevatedButton(
+                                        onPressed: () => _handleAction(
+                                            r.id, RepairAction.close),
+                                        child: const Text('审核通过 (关闭)'),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.orange,
+                                        ),
+                                        onPressed: () =>
+                                            _showRejectDialog(r.id),
+                                        child: const Text('退回'),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAssignDialog(String repairId) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('分配维修人员'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: '维修人员ID',
+            hintText: '请输入维修人员ID',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final id = controller.text.trim();
+              Navigator.pop(ctx);
+              if (id.isNotEmpty) {
+                _handleAction(repairId, RepairAction.assign,
+                    maintainerId: id);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请输入维修人员ID')),
+                );
+              }
+            },
+            child: const Text('确认分配'),
+          ),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/charging_provider.dart';
+import 'repair_screen.dart';
 
 class ChargingScreen extends StatefulWidget {
   const ChargingScreen({super.key});
@@ -144,12 +145,60 @@ class _ChargingScreenState extends State<ChargingScreen> {
                 ...provider.chargers.map((charger) => Card(
                       child: ListTile(
                         title: Text('${charger.chargerCode} (${charger.type})'),
-                        subtitle: Text('状态: ${charger.status}'),
+                        subtitle: Row(
+                          children: [
+                            Text('状态: ${charger.status}'),
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.circle,
+                              size: 10,
+                              color: charger.onlineStatus == 'ONLINE'
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              charger.onlineStatus == 'ONLINE' ? '在线' : '离线',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: charger.onlineStatus == 'ONLINE'
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
                         selected: _selectedCharger?.id == charger.id,
-                        onTap: charger.status == 'idle'
+                        enabled: charger.status == 'IDLE' &&
+                            charger.onlineStatus == 'ONLINE',
+                        onTap: charger.status == 'IDLE' &&
+                                charger.onlineStatus == 'ONLINE'
                             ? () => setState(
                                     () => _selectedCharger = charger)
                             : null,
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (v) {
+                            if (v == 'repair') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const RepairScreen(),
+                                ),
+                              );
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'repair',
+                              child: ListTile(
+                                leading: Icon(Icons.build, size: 20),
+                                title: Text('报修'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )),
             ],

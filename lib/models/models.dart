@@ -6,3 +6,4 @@ export 'payment_model.dart';
 export 'repair_model.dart';
 export 'login_request.dart';
 export 'login_response.dart';
+export 'user_role.dart';
