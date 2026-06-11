@@ -50,6 +50,8 @@ ChargerModel createMockCharger({
   String type = 'fast',
   String status = 'idle',
   String stationName = '测试充电站',
+  String stationId = 'station1',
+  String onlineStatus = 'ONLINE',
 }) {
   return ChargerModel(
     id: id,
@@ -57,6 +59,8 @@ ChargerModel createMockCharger({
     type: type,
     status: status,
     stationName: stationName,
+    stationId: stationId,
+    onlineStatus: onlineStatus,
   );
 }
 
@@ -92,6 +96,7 @@ ChargeRecordModel createMockChargeRecord({
 /// Creates a mock payment model for testing.
 PaymentModel createMockPayment({
   String id = 'pay1',
+  String userId = 'user1',
   String chargeRecordId = 'record1',
   String method = 'wechat',
   double amount = 50.0,
@@ -99,6 +104,7 @@ PaymentModel createMockPayment({
 }) {
   return PaymentModel(
     id: id,
+    userId: userId,
     chargeRecordId: chargeRecordId,
     method: method,
     amount: amount,
@@ -114,6 +120,7 @@ RepairModel createMockRepair({
   String description = '充电桩故障，无法启动',
   String status = 'open',
   String reporterName = '测试用户',
+  String reporterId = 'user1',
   String reportedAt = '2026-06-01T10:00:00',
 }) {
   return RepairModel(
@@ -123,6 +130,7 @@ RepairModel createMockRepair({
     description: description,
     status: status,
     reporterName: reporterName,
+    reporterId: reporterId,
     reportedAt: reportedAt,
   );
 }

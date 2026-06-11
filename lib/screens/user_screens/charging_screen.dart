@@ -203,7 +203,8 @@ class _ChargingScreenState extends State<ChargingScreen> {
                     )),
             ],
             const SizedBox(height: 24),
-            if (currentRecord != null && currentRecord.status == 'processing')
+            if (currentRecord != null &&
+                currentRecord.status.toUpperCase() == 'PROCESSING')
               ElevatedButton.icon(
                 onPressed: _isCharging ? null : _stopCharge,
                 icon: const Icon(Icons.stop),

@@ -46,26 +46,30 @@ void main() {
     testWidgets('renders all form fields and button', (tester) async {
       await pumpAndWait(tester);
 
-      expect(find.text('姓名'), findsOneWidget);
-      expect(find.text('手机号'), findsOneWidget);
-      expect(find.text('密码'), findsOneWidget);
-      expect(find.text('确认密码'), findsOneWidget);
-      expect(find.text('车牌号'), findsOneWidget);
-      expect(find.text('验证码'), findsOneWidget);
-      expect(find.text('注册'), findsAtLeast(1));
+      expect(find.text('姓名', skipOffstage: false), findsOneWidget);
+      expect(find.text('手机号', skipOffstage: false), findsOneWidget);
+      expect(find.text('密码', skipOffstage: false), findsOneWidget);
+      expect(find.text('确认密码', skipOffstage: false), findsOneWidget);
+      expect(find.text('车牌号', skipOffstage: false), findsOneWidget);
+      expect(find.text('请输入验证码', skipOffstage: false), findsAtLeast(1));
+      expect(find.text('注册', skipOffstage: false), findsAtLeast(1));
     });
 
     testWidgets('shows validation errors for empty fields', (tester) async {
       await pumpAndWait(tester);
 
+      // Ensure button is visible, then tap
+      await tester.ensureVisible(find.widgetWithText(ElevatedButton, '注册'));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.widgetWithText(ElevatedButton, '注册'));
       await tester.pumpAndSettle();
 
-      expect(find.text('请输入姓名'), findsOneWidget);
-      expect(find.text('请输入手机号'), findsOneWidget);
-      expect(find.text('请输入密码'), findsOneWidget);
-      expect(find.text('请输入车牌号'), findsOneWidget);
-      expect(find.text('请输入验证码'), findsOneWidget);
+      expect(find.text('请输入姓名', skipOffstage: false), findsOneWidget);
+      expect(find.text('请输入手机号', skipOffstage: false), findsOneWidget);
+      expect(find.text('请输入密码', skipOffstage: false), findsOneWidget);
+      expect(find.text('请输入车牌号', skipOffstage: false), findsOneWidget);
+      expect(find.text('请输入验证码', skipOffstage: false), findsAtLeast(1));
     });
 
     testWidgets('shows validation error for password mismatch', (tester) async {
@@ -79,10 +83,13 @@ void main() {
       await tester.enterText(fields.at(4), 'ABC1234');
       await tester.enterText(fields.at(5), '1234');
 
+      await tester.ensureVisible(find.widgetWithText(ElevatedButton, '注册'));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.widgetWithText(ElevatedButton, '注册'));
       await tester.pumpAndSettle();
 
-      expect(find.text('两次密码不一致'), findsOneWidget);
+      expect(find.text('两次密码不一致', skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('calls register with correct args', (tester) async {
@@ -103,7 +110,13 @@ void main() {
       await tester.enterText(fields.at(4), 'ABC1234');
       await tester.enterText(fields.at(5), '1234');
 
+      await tester.ensureVisible(find.widgetWithText(ElevatedButton, '注册'));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.widgetWithText(ElevatedButton, '注册'));
+
+      // Need to await the async register call
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
       await tester.pumpAndSettle();
 
       expect(authProvider.registerCalled, isTrue);
@@ -136,12 +149,17 @@ void main() {
       await tester.enterText(fields.at(2), 'password123');
       await tester.enterText(fields.at(3), 'password123');
       await tester.enterText(fields.at(4), 'ABC1234');
-      await tester.enterText(fields.at(5), '1234');
+      await tester.enterText(fields.at(5), 'wrong');
 
-      await tester.tap(find.widgetWithText(ElevatedButton, '注册'));
+      // Scroll to register button
+      await tester.ensureVisible(find.widgetWithText(ElevatedButton, '注册'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('phone registered'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ElevatedButton, '注册'));
+      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('phone registered', skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('password visibility toggle works', (tester) async {

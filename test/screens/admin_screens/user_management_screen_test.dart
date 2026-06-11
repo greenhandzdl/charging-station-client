@@ -14,7 +14,7 @@ void main() {
       expect(find.text('用户管理'), findsOneWidget);
     });
 
-    testWidgets('shows loading indicator then empty state', (tester) async {
+    testWidgets('shows loading indicator then station list', (tester) async {
       await tester.pumpWidget(wrapWithProviders(
         child: const UserManagementScreen(),
       ));
@@ -24,8 +24,8 @@ void main() {
       // After delay completes, loading finishes
       await tester.pumpAndSettle();
 
-      // Shows empty state text (the screen simulates a delayed load)
-      expect(find.text('用户列表加载中...'), findsOneWidget);
+      // Shows empty state text (no users yet)
+      expect(find.text('暂无用户数据'), findsOneWidget);
     });
   });
 }

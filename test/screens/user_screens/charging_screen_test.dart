@@ -26,8 +26,6 @@ void main() {
       expect(find.text('充电'), findsOneWidget);
       // Station selection prompt
       expect(find.text('选择充电站'), findsOneWidget);
-      // Start charge button
-      expect(find.text('启动充电'), findsOneWidget);
       // Start button should be disabled initially (no selection)
       final startButton = tester.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, '启动充电'),

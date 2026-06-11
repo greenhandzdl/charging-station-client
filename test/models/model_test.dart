@@ -30,7 +30,7 @@ void main() {
       expect(model.name, '');
       expect(model.phone, '');
       expect(model.plateNumber, '');
-      expect(model.role, 'user');
+      expect(model.role, 'USER');
       expect(model.balance, 0.0);
     });
 
@@ -68,7 +68,7 @@ void main() {
       expect(model.name, '');
       expect(model.location, '');
       expect(model.chargerCount, 0);
-      expect(model.status, 'unknown');
+      expect(model.status, 'NORMAL');
     });
 
     test('handles snake_case chargerCount', () {
@@ -82,41 +82,51 @@ void main() {
       final json = {
         'id': 'c1',
         'chargerCode': 'CC-001',
-        'type': 'fast',
-        'status': 'idle',
+        'type': 'FAST',
+        'status': 'IDLE',
         'stationName': '朝阳充电站',
+        'stationId': 'station1',
+        'onlineStatus': 'ONLINE',
       };
 
       final model = ChargerModel.fromJson(json);
       expect(model.id, 'c1');
       expect(model.chargerCode, 'CC-001');
-      expect(model.type, 'fast');
-      expect(model.status, 'idle');
+      expect(model.type, 'FAST');
+      expect(model.status, 'IDLE');
       expect(model.stationName, '朝阳充电站');
+      expect(model.stationId, 'station1');
+      expect(model.onlineStatus, 'ONLINE');
     });
 
     test('handles null fields', () {
       final model = ChargerModel.fromJson({});
       expect(model.id, '');
       expect(model.chargerCode, '');
-      expect(model.type, 'slow');
-      expect(model.status, 'unknown');
-      expect(model.stationName, '');
+      expect(model.type, 'SLOW');
+      expect(model.status, 'IDLE');
+      expect(model.stationName, isNull);
+      expect(model.stationId, '');
+      expect(model.onlineStatus, 'ONLINE');
     });
 
     test('handles snake_case keys', () {
       final json = {
         'charger_code': 'CC-002',
         'station_name': '海淀站',
+        'station_id': 's2',
+        'online_status': 'OFFLINE',
       };
 
       final model = ChargerModel.fromJson(json);
       expect(model.chargerCode, 'CC-002');
       expect(model.stationName, '海淀站');
+      expect(model.stationId, 's2');
+      expect(model.onlineStatus, 'OFFLINE');
     });
 
-    test('type defaults to slow', () {
-      expect(ChargerModel.fromJson({}).type, 'slow');
+    test('type defaults to SLOW', () {
+      expect(ChargerModel.fromJson({}).type, 'SLOW');
     });
   });
 
@@ -159,10 +169,10 @@ void main() {
       expect(model.fee, 0.0);
       expect(model.status, 'unknown');
       expect(model.deductionStatus, 'pending');
-      expect(model.userName, '');
-      expect(model.plateNumber, '');
-      expect(model.chargerCode, '');
-      expect(model.stationName, '');
+      expect(model.userName, isNull);
+      expect(model.plateNumber, isNull);
+      expect(model.chargerCode, isNull);
+      expect(model.stationName, isNull);
     });
 
     test('handles snake_case keys', () {
@@ -246,10 +256,10 @@ void main() {
       final model = RepairModel.fromJson({});
       expect(model.id, '');
       expect(model.chargerId, '');
-      expect(model.chargerCode, '');
+      expect(model.chargerCode, isNull);
       expect(model.description, '');
-      expect(model.status, 'open');
-      expect(model.reporterName, '');
+      expect(model.status, 'OPEN');
+      expect(model.reporterName, isNull);
       expect(model.reportedAt, '');
     });
 

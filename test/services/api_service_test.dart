@@ -413,13 +413,17 @@ void main() {
     });
 
     group('getCaptcha', () {
-      test('returns captchaId string', () async {
+      test('returns captchaId and image map', () async {
         ApiService.testClient = MockClient((request) async {
-          return jsonResponse({'captchaId': 'abc123'}, 200);
+          return jsonResponse({
+            'captchaId': 'abc123',
+            'image': 'data:image/png;base64,...',
+          }, 200);
         });
 
-        final captchaId = await ApiService.getCaptcha();
-        expect(captchaId, 'abc123');
+        final result = await ApiService.getCaptcha();
+        expect(result['captchaId'], 'abc123');
+        expect(result['image'], 'data:image/png;base64,...');
       });
     });
 
