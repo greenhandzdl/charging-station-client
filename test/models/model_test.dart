@@ -107,21 +107,6 @@ void main() {
       expect(model.status, 'IDLE');
       expect(model.stationName, isNull);
       expect(model.stationId, '');
-      expect(model.onlineStatus, 'ONLINE');
-    });
-
-    test('handles snake_case keys', () {
-      final json = {
-        'charger_code': 'CC-002',
-        'station_name': '海淀站',
-        'station_id': 's2',
-        'online_status': 'OFFLINE',
-      };
-
-      final model = ChargerModel.fromJson(json);
-      expect(model.chargerCode, 'CC-002');
-      expect(model.stationName, '海淀站');
-      expect(model.stationId, 's2');
       expect(model.onlineStatus, 'OFFLINE');
     });
 

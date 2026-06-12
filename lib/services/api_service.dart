@@ -258,6 +258,34 @@ class ApiService {
     return await _handleResponse(response);
   }
 
+  static Future<Map<String, dynamic>> selectCharger(
+      String chargerId, String sessionId) async {
+    final response = await _post(
+      Uri.parse('$baseUrl/chargers/$chargerId/select'),
+      headers: _headers(),
+      body: jsonEncode({'sessionId': sessionId}),
+    );
+    return await _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> getCurrentCharge() async {
+    final response = await _get(
+      Uri.parse('$baseUrl/charges?status=PROCESSING'),
+      headers: _headers(),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: '获取当前充电信息失败',
+      );
+    }
+    final list = response.body.isNotEmpty
+        ? jsonDecode(response.body) as List<dynamic>
+        : <dynamic>[];
+    if (list.isEmpty) return {};
+    return list[0] as Map<String, dynamic>;
+  }
+
   static Future<List<ChargeRecordModel>> getChargingRecords() async {
     final response = await _get(
       Uri.parse('$baseUrl/charges'),

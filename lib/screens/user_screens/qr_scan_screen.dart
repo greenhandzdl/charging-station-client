@@ -15,12 +15,14 @@ class _ScanResult {
   final String? stationName;
   final String? chargerCode;
   final String? type;
+  final String? sessionId;
 
   _ScanResult({
     required this.chargerId,
     this.stationName,
     this.chargerCode,
     this.type,
+    this.sessionId,
   });
 }
 
@@ -257,6 +259,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
           stationName: json['stationName'] as String?,
           chargerCode: json['chargerCode'] as String?,
           type: json['type'] as String?,
+          sessionId: json['sessionId'] as String?,
         );
         if (scanResult.chargerId.isEmpty) {
           throw const FormatException('缺少 chargerId');
@@ -345,7 +348,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
-                  _startCharging(result.chargerId);
+                  _startCharging(result.chargerId, sessionId: result.sessionId);
                 },
                 icon: const Icon(Icons.flash_on),
                 label: const Text('启动充电'),
@@ -397,9 +400,15 @@ class _QrScanScreenState extends State<QrScanScreen> {
     );
   }
 
-  Future<void> _startCharging(String chargerId) async {
+  Future<void> _startCharging(String chargerId, {String? sessionId}) async {
     if (!mounted) return;
     try {
+      // First, select/bind the charger (if sessionId is available)
+      if (sessionId != null && sessionId.isNotEmpty) {
+        await ApiService.selectCharger(chargerId, sessionId);
+      }
+
+      // Then start charging
       await context.read<ChargingProvider>().startCharge(chargerId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -443,6 +452,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
             _infoRow('编码', result.chargerCode ?? '-'),
             _infoRow('所属站点', result.stationName ?? '-'),
             _infoRow('类型', result.type ?? '-'),
+            _infoRow('会话ID', result.sessionId ?? '-'),
           ],
         ),
         actions: [

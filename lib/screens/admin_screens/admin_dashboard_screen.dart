@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_role.dart';
-import 'station_management_screen.dart';
-import 'charger_management_screen.dart';
+import 'station_charger_management_screen.dart';
 import 'user_management_screen.dart';
 import 'repair_management_screen.dart';
 import 'statistics_screen.dart';
@@ -40,21 +39,12 @@ class AdminDashboardScreen extends StatelessWidget {
             _buildMenuItem(
               context,
               icon: Icons.ev_station,
-              label: '充电站管理',
+              label: '充电站/桩管理',
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => const StationManagementScreen()),
-              ),
-            ),
-            _buildMenuItem(
-              context,
-              icon: Icons.battery_charging_full,
-              label: '充电桩管理',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const ChargerManagementScreen()),
+                    builder: (_) =>
+                        const StationChargerManagementScreen()),
               ),
             ),
             _buildMenuItem(

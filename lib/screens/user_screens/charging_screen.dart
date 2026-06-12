@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/charging_provider.dart';
+import 'qr_scan_screen.dart';
 import 'repair_screen.dart';
 
 class ChargingScreen extends StatefulWidget {
@@ -106,7 +107,21 @@ class _ChargingScreenState extends State<ChargingScreen> {
     final currentRecord = provider.currentRecord;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('充电')),
+      appBar: AppBar(
+        title: const Text('充电'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: '扫码充电',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const QrScanScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _loadStations,
         child: ListView(
@@ -229,10 +244,18 @@ class _ChargingScreenState extends State<ChargingScreen> {
                     children: [
                       const Text('当前充电信息',
                           style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Text('状态: ${currentRecord.status}'),
-                      Text('电量: ${currentRecord.energyKwh} kWh'),
-                      Text('费用: ${currentRecord.fee} 元'),
+                      const Divider(),
+                      _infoRow('状态', currentRecord.status),
+                      _infoRow('电量', '${currentRecord.energyKwh} kWh'),
+                      _infoRow('费用', '${currentRecord.fee} 元'),
+                      if (currentRecord.startTime.isNotEmpty)
+                        _infoRow('开始时间', currentRecord.startTime),
+                      if (currentRecord.endTime.isNotEmpty)
+                        _infoRow('结束时间', currentRecord.endTime),
+                      if (currentRecord.chargerCode != null)
+                        _infoRow('充电桩', currentRecord.chargerCode!),
+                      if (currentRecord.stationName != null)
+                        _infoRow('站点', currentRecord.stationName!),
                     ],
                   ),
                 ),
@@ -240,6 +263,24 @@ class _ChargingScreenState extends State<ChargingScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(label,
+                style: TextStyle(
+                    color: Colors.grey.shade600, fontSize: 13)),
+          ),
+          Expanded(
+              child: Text(value, style: const TextStyle(fontSize: 13))),
+        ],
       ),
     );
   }

@@ -65,6 +65,11 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
   Future<void> _showChargerForm(ChargerModel? existing) async {
     final codeController =
         TextEditingController(text: existing?.chargerCode ?? '');
+    final onlineStatusController = TextEditingController(
+      text: existing != null
+          ? (existing.onlineStatus == 'ONLINE' ? '在线' : '离线')
+          : '离线（上线后自动更新）',
+    );
     String type = existing?.type ?? 'SLOW';
     String status = existing?.status ?? 'IDLE';
     bool isSaving = false;
@@ -120,6 +125,16 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
                       onChanged: (v) {
                         if (v != null) setDialogState(() => status = v);
                       },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: onlineStatusController,
+                      decoration: const InputDecoration(
+                        labelText: '在线状态',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.sensors),
+                      ),
+                      readOnly: true,
                     ),
                   ],
                 ),
@@ -285,7 +300,8 @@ class _ChargerManagementScreenState extends State<ChargerManagementScreen> {
                           return Card(
                             child: ListTile(
                               title: Text('${c.chargerCode} (${c.type})'),
-                              subtitle: Text('状态: ${c.status}'),
+                              subtitle: Text(
+                                  '状态: ${c.status} | ${c.onlineStatus == "ONLINE" ? "在线" : "离线"}'),
                               trailing: PopupMenuButton<String>(
                                 onSelected: (v) {
                                   if (v == 'edit') {

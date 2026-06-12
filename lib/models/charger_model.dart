@@ -8,6 +8,10 @@ class ChargerModel {
   final String? stationName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String deviceType;
+  final double? ratedPowerKw;
+  final String? manufacturer;
+  final String? model;
 
   ChargerModel({
     required this.id,
@@ -19,6 +23,10 @@ class ChargerModel {
     this.stationName,
     this.createdAt,
     this.updatedAt,
+    this.deviceType = 'SIMULATED',
+    this.ratedPowerKw,
+    this.manufacturer,
+    this.model,
   });
 
   factory ChargerModel.fromJson(Map<String, dynamic> json) {
@@ -31,7 +39,7 @@ class ChargerModel {
       status: json['status'] as String? ?? 'IDLE',
       onlineStatus: json['onlineStatus'] as String? ??
           json['online_status'] as String? ??
-          'ONLINE',
+          'OFFLINE',
       stationName: json['stationName'] as String? ??
           json['station_name'] as String?,
       stationId: json['stationId'] as String? ??
@@ -43,6 +51,13 @@ class ChargerModel {
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'] as String)
           : null,
+      deviceType: json['deviceType'] as String? ??
+          json['device_type'] as String? ??
+          'SIMULATED',
+      ratedPowerKw: (json['ratedPowerKw'] as num?)?.toDouble() ??
+          (json['rated_power_kw'] as num?)?.toDouble(),
+      manufacturer: json['manufacturer'] as String?,
+      model: json['model'] as String?,
     );
   }
 
@@ -57,6 +72,10 @@ class ChargerModel {
       if (stationName != null) 'stationName': stationName,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+      'deviceType': deviceType,
+      if (ratedPowerKw != null) 'ratedPowerKw': ratedPowerKw,
+      if (manufacturer != null) 'manufacturer': manufacturer,
+      if (model != null) 'model': model,
     };
   }
 }
