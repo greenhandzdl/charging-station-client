@@ -197,7 +197,10 @@ class _ChargingScreenState extends State<ChargingScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const RepairScreen(),
+                                  builder: (_) => RepairScreen(
+                                    initialChargerId: charger.id,
+                                    initialChargerCode: charger.chargerCode,
+                                  ),
                                 ),
                               );
                             }

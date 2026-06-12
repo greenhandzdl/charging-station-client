@@ -4,8 +4,9 @@ import '../../providers/repair_provider.dart';
 
 class RepairScreen extends StatefulWidget {
   final String? initialChargerId;
+  final String? initialChargerCode;
 
-  const RepairScreen({super.key, this.initialChargerId});
+  const RepairScreen({super.key, this.initialChargerId, this.initialChargerCode});
 
   @override
   State<RepairScreen> createState() => _RepairScreenState();
@@ -19,7 +20,9 @@ class _RepairScreenState extends State<RepairScreen> {
   void initState() {
     super.initState();
     context.read<RepairProvider>().fetchRepairs();
-    if (widget.initialChargerId != null) {
+    if (widget.initialChargerCode != null) {
+      _chargerCodeController.text = widget.initialChargerCode!;
+    } else if (widget.initialChargerId != null) {
       _chargerCodeController.text = widget.initialChargerId!;
     }
   }
@@ -41,9 +44,11 @@ class _RepairScreenState extends State<RepairScreen> {
       return;
     }
     try {
+      // Use initialChargerId (UUID) when coming from charging screen
+      final chargerId = widget.initialChargerId ?? chargerCode;
       await context
           .read<RepairProvider>()
-          .submitRepair(chargerCode, description);
+          .submitRepair(chargerId, description);
       _chargerCodeController.clear();
       _descriptionController.clear();
       if (mounted) {

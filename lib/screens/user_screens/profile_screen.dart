@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../user_screens/payment_screen.dart';
 import '../user_screens/payment_entry_screen.dart';
 import '../user_screens/charger_status_screen.dart';
@@ -19,6 +20,114 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _refreshBalance() async {
     await context.read<AuthProvider>().refreshBalance();
+  }
+
+  Future<void> _showEditProfileDialog() async {
+    final auth = context.read<AuthProvider>();
+    final user = auth.currentUser;
+    if (user == null) return;
+
+    final nameController = TextEditingController(text: user.name);
+    final phoneController = TextEditingController(text: user.phone);
+    final plateController = TextEditingController(text: user.plateNumber);
+    bool isSaving = false;
+
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('编辑资料'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: '姓名',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: phoneController,
+                      decoration: const InputDecoration(
+                        labelText: '手机号',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: plateController,
+                      decoration: const InputDecoration(
+                        labelText: '车牌号',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.pop(ctx, false),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          final name = nameController.text.trim();
+                          final phone = phoneController.text.trim();
+                          final plate = plateController.text.trim();
+                          if (name.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('姓名不能为空')),
+                            );
+                            return;
+                          }
+                          setDialogState(() => isSaving = true);
+                          try {
+                            await ApiService.updateProfile({
+                              'name': name,
+                              'phone': phone,
+                              'plateNumber': plate,
+                            });
+                            // Update auth provider with new info
+                            auth.updateProfileLocally(name, phone, plate);
+                            setDialogState(() => isSaving = false);
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('资料已更新')),
+                              );
+                            }
+                            Navigator.pop(ctx, true);
+                          } catch (e) {
+                            setDialogState(() => isSaving = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('保存失败: $e')),
+                            );
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('保存'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -58,8 +167,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(user?.name ?? '',
                       style: const TextStyle(fontSize: 18)),
                   Text(user?.phone ?? ''),
+                  Text('车牌号: ${user?.plateNumber.isNotEmpty == true ? user!.plateNumber : '未设置'}'),
                   Text('余额: ${user?.balance ?? 0.0} 元'),
                   Text('角色: ${user?.role ?? 'user'}'),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _showEditProfileDialog,
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text('编辑资料'),
+                  ),
                 ],
               ),
             ),

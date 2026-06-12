@@ -136,6 +136,21 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Update the current user's profile info in memory.
+  void updateProfileLocally(String name, String phone, String plateNumber) {
+    if (_currentUser != null) {
+      _currentUser = UserModel(
+        id: _currentUser!.id,
+        name: name,
+        phone: phone,
+        plateNumber: plateNumber,
+        role: _currentUser!.role,
+        balance: _currentUser!.balance,
+      );
+      notifyListeners();
+    }
+  }
+
   Future<bool> tryAutoLogin() async {
     // Ensure prefs are initialized
     if (_prefs == null) {

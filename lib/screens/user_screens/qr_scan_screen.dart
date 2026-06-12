@@ -434,7 +434,12 @@ class _QrScanScreenState extends State<QrScanScreen> {
   void _navigateToRepair(_ScanResult result) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const RepairScreen()),
+      MaterialPageRoute(
+        builder: (_) => RepairScreen(
+          initialChargerId: result.chargerId,
+          initialChargerCode: result.chargerCode,
+        ),
+      ),
     );
   }
 

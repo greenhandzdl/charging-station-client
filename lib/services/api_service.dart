@@ -699,6 +699,16 @@ class ApiService {
     await _handleResponse(response);
   }
 
+  // ---- User Profile (self-service) ----
+  static Future<void> updateProfile(Map<String, dynamic> data) async {
+    final response = await _put(
+      Uri.parse('$baseUrl/users/profile'),
+      headers: _headers(),
+      body: jsonEncode(data),
+    );
+    await _handleResponse(response);
+  }
+
   // ---- User Management (Admin) ----
   static Future<void> changeRole(
       String userId, String newRole) async {
