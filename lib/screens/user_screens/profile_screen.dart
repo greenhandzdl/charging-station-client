@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/charging_provider.dart';
 import '../../services/api_service.dart';
 import '../user_screens/payment_screen.dart';
 import '../user_screens/payment_entry_screen.dart';
@@ -258,6 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('退出登录'),
               onTap: () {
                 context.read<AuthProvider>().logout();
+                context.read<ChargingProvider>().clear();
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (_) => const LoginScreen()),

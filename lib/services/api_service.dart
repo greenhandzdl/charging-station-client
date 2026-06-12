@@ -286,6 +286,15 @@ class ApiService {
     return list[0] as Map<String, dynamic>;
   }
 
+  /// 获取用户当前活跃的充电记录 + 离线通知标记（用于本地模拟恢复）
+  static Future<Map<String, dynamic>> getActiveCharges() async {
+    final response = await _get(
+      Uri.parse('$baseUrl/charges/active'),
+      headers: _headers(),
+    );
+    return await _handleResponse(response);
+  }
+
   static Future<List<ChargeRecordModel>> getChargingRecords() async {
     final response = await _get(
       Uri.parse('$baseUrl/charges'),

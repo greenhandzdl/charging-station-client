@@ -23,6 +23,10 @@ class _ChargingScreenState extends State<ChargingScreen> {
   void initState() {
     super.initState();
     _loadStations();
+    // 登录后从后端恢复活跃充电记录（支持多车恢复）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChargingProvider>().resumeFromBackend();
+    });
   }
 
   Future<void> _loadStations() async {
@@ -144,6 +148,8 @@ class _ChargingScreenState extends State<ChargingScreen> {
                           _selectedStation = station;
                           _selectedCharger = null;
                         });
+                        // 立即清空桩列表，避免重复显示
+                        context.read<ChargingProvider>().clearChargers();
                         _loadChargers(station.id);
                       },
                     ),
@@ -237,6 +243,31 @@ class _ChargingScreenState extends State<ChargingScreen> {
                 icon: const Icon(Icons.play_arrow),
                 label: Text(_isCharging ? '启动中...' : '启动充电'),
               ),
+            // 本地实时模拟显示（支持多车辆）
+            if (provider.activeSimulations.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text('实时充电状态',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ...provider.activeSimulations.map((sim) => Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('充电桩: ${sim.chargerCode}',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(height: 4),
+                          _infoRow('类型', sim.type),
+                          _infoRow('功率', sim.powerText),
+                          _infoRow('时长', sim.durationText),
+                          _infoRow('用电量', sim.energyText),
+                          _infoRow('费用', sim.feeText),
+                        ],
+                      ),
+                    ),
+                  )),
+            ],
             if (currentRecord != null) ...[
               const SizedBox(height: 16),
               Card(

@@ -42,12 +42,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isSaving = true);
     try {
       final auth = context.read<AuthProvider>();
-      await ApiService.updateUser(auth.currentUser!.id, {
+      await ApiService.updateProfile({
         'name': name,
         'plateNumber': plate,
       });
-      // Refresh user data by calling refresh token / balance
-      await auth.refreshAccessToken();
+      // 更新本地缓存（API 不传 phone，只传 name + plateNumber）
+      final user = auth.currentUser;
+      if (user != null) {
+        auth.updateProfileLocally(name, user.phone, plate);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('资料已更新')),
