@@ -25,7 +25,9 @@ class _ChargingScreenState extends State<ChargingScreen> {
     _loadStations();
     // 登录后从后端恢复活跃充电记录（支持多车恢复）
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChargingProvider>().resumeFromBackend();
+      context.read<ChargingProvider>().resumeFromBackend().then((_) {
+        if (mounted) setState(() {});
+      });
     });
   }
 
@@ -84,25 +86,53 @@ class _ChargingScreenState extends State<ChargingScreen> {
 
   Future<void> _stopCharge() async {
     final provider = context.read<ChargingProvider>();
-    final record = provider.currentRecord;
-    if (record == null) return;
     setState(() => _isCharging = true);
-    try {
-      await provider.stopCharge(record.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('充电已结束')),
-        );
+    // 停止所有活跃的充电模拟（支持多车辆）
+    final sims = provider.activeSimulations.toList();
+    if (sims.isEmpty) {
+      // 回退到 currentRecord（兼容旧的单桩方式）
+      if (provider.currentRecord != null) {
+        try {
+          await provider.stopCharge(provider.currentRecord!.id);
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('结束充电失败: $e')),
+            );
+          }
+          if (mounted) setState(() => _isCharging = false);
+          return;
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('充电已结束')),
+          );
+        }
+        if (mounted) setState(() => _isCharging = false);
+        return;
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('结束充电失败: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isCharging = false);
+      setState(() => _isCharging = false);
+      return;
     }
+    bool hasError = false;
+    for (final sim in sims) {
+      try {
+        await provider.stopCharge(sim.recordId);
+      } catch (e) {
+        hasError = true;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${sim.chargerCode} 结束充电失败: $e')),
+          );
+        }
+      }
+    }
+    if (!hasError && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('充电已结束')),
+      );
+    }
+    if (mounted) setState(() => _isCharging = false);
   }
 
   @override
@@ -227,8 +257,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
                     )),
             ],
             const SizedBox(height: 24),
-            if (currentRecord != null &&
-                currentRecord.status.toUpperCase() == 'PROCESSING')
+            if (provider.isCharging)
               ElevatedButton.icon(
                 onPressed: _isCharging ? null : _stopCharge,
                 icon: const Icon(Icons.stop),

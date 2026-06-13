@@ -69,4 +69,22 @@ class RepairProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> softDeleteRepair(String repairId) async {
+    try {
+      await ApiService.softDeleteRepair(repairId);
+      await fetchRepairs();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> approveDeleteRepair(String repairId) async {
+    try {
+      await ApiService.approveDeleteRepair(repairId);
+      await fetchRepairs();
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

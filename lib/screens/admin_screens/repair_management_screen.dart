@@ -23,7 +23,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
 
   Future<void> _handleAction(
       String repairId, RepairAction action,
-      {String? reason, String? maintainerId}) async {
+      {String? reason, String? maintainerId, String? newDescription}) async {
     try {
       final provider = context.read<RepairProvider>();
       switch (action) {
@@ -37,6 +37,10 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
           if (reason != null) {
             await provider.rejectRepair(repairId, reason);
           }
+        case RepairAction.softDelete:
+          await provider.softDeleteRepair(repairId);
+        case RepairAction.approveDelete:
+          await provider.approveDeleteRepair(repairId);
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -64,7 +68,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
     List<RepairModel> displayedRepairs = provider.repairs;
     if (isMaintainer) {
       displayedRepairs = provider.repairs
-          .where((r) => r.status == 'OPEN' || r.handledBy == currentUserId)
+          .where((r) => r.status == 'open' || r.handledBy == currentUserId)
           .toList();
     }
 
@@ -122,7 +126,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                     Text('时间: ${r.reportedAt}'),
                                     const SizedBox(height: 8),
                                     if (isAdmin &&
-                                        r.status == 'OPEN') ...[
+                                        r.status == 'open') ...[
                                       ElevatedButton(
                                         onPressed: () =>
                                             _showAssignDialog(r.id),
@@ -136,7 +140,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                       ),
                                     ],
                                     if (isMaintainer &&
-                                        r.status == 'OPEN')
+                                        r.status == 'open')
                                       ElevatedButton(
                                         onPressed: () => _handleAction(
                                             r.id,
@@ -144,7 +148,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                             maintainerId: currentUserId),
                                         child: const Text('接单'),
                                       ),
-                                    if (r.status == 'IN_PROGRESS' &&
+                                    if (r.status == 'in_progress' &&
                                         (isAdmin ||
                                             r.handledBy == currentUserId))
                                       ElevatedButton(
@@ -153,7 +157,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                         child: const Text('标记维修完成'),
                                       ),
                                     if (isAdmin &&
-                                        r.status == 'RESOLVED') ...[
+                                        r.status == 'resolved') ...[
                                       ElevatedButton(
                                         onPressed: () => _handleAction(
                                             r.id, RepairAction.close),
@@ -169,6 +173,42 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
                                         child: const Text('退回'),
                                       ),
                                     ],
+                                    if (isAdmin && r.status == 'deleted')
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                        onPressed: () =>
+                                            _handleAction(r.id,
+                                                RepairAction.approveDelete),
+                                        child: const Text('审批删除 (永久删除)'),
+                                      ),
+                                    // Admin close (打回) for in_progress
+                                    if (isAdmin && r.status == 'in_progress') ...[
+                                      const SizedBox(height: 4),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red.shade100,
+                                          foregroundColor: Colors.red.shade800,
+                                        ),
+                                        onPressed: () => _handleAction(
+                                            r.id, RepairAction.close),
+                                        child: const Text('打回'),
+                                      ),
+                                    ],
+                                    // Admin delete button (any non-DELETED)
+                                    if (isAdmin && r.status != 'deleted') ...[
+                                      const SizedBox(height: 4),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red.shade50,
+                                          foregroundColor: Colors.red,
+                                        ),
+                                        onPressed: () =>
+                                            _showDeleteConfirmDialog(r.id),
+                                        child: const Text('删除'),
+                                      ),
+                                    ]
                                   ],
                                 ),
                               ),
@@ -251,6 +291,32 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
       ),
     );
   }
+
+  void _showDeleteConfirmDialog(String repairId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('确定要删除此报修记录吗？将进入待审批状态。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _handleAction(repairId, RepairAction.softDelete);
+            },
+            child: const Text('确认删除'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-enum RepairAction { assign, resolve, close, reject }
+enum RepairAction { assign, resolve, close, reject, softDelete, approveDelete }

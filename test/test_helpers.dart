@@ -260,6 +260,9 @@ class MockChargingProvider extends ChargingProvider {
   ChargeRecordModel? get currentRecord => _mockCurrentRecord;
 
   @override
+  bool get isCharging => _mockCurrentRecord != null;
+
+  @override
   Future<void> fetchStations() async {
     _fetchStationsCalled = true;
   }
@@ -281,6 +284,11 @@ class MockChargingProvider extends ChargingProvider {
     _stopChargeCalled = true;
     _lastRecordId = recordId;
     if (_chargeError != null) throw _chargeError!;
+  }
+
+  @override
+  Future<void> resumeFromBackend() async {
+    // No-op in tests; rely on setCurrentRecord instead
   }
 }
 

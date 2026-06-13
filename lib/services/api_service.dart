@@ -586,6 +586,22 @@ class ApiService {
     await _handleResponse(response);
   }
 
+  static Future<void> softDeleteRepair(String repairId) async {
+    final response = await _put(
+      Uri.parse('$baseUrl/repairs/$repairId/delete'),
+      headers: _headers(),
+    );
+    await _handleResponse(response);
+  }
+
+  static Future<void> approveDeleteRepair(String repairId) async {
+    final response = await _put(
+      Uri.parse('$baseUrl/repairs/$repairId/approve-delete'),
+      headers: _headers(),
+    );
+    await _handleResponse(response);
+  }
+
   // ---- Analytics ----
   static Future<List<Map<String, dynamic>>> getUserChargeStats() async {
     final response = await _get(
@@ -727,6 +743,36 @@ class ApiService {
       body: jsonEncode({'role': newRole}),
     );
     await _handleResponse(response);
+  }
+
+  // ---- Charger User Management ----
+  static Future<Map<String, dynamic>> resetChargerToken(String targetUserId) async {
+    final response = await _post(
+      Uri.parse('$baseUrl/auth/charger-reset-token/$targetUserId'),
+      headers: _headers(),
+    );
+    return await _handleResponse(response);
+  }
+
+  static Future<List<Map<String, dynamic>>> getChargerUsers(String? stationId) async {
+    final query = stationId != null ? '?stationId=$stationId' : '';
+    final response = await _get(
+      Uri.parse('$baseUrl/auth/charger-users$query'),
+      headers: _headers(),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _extractErrorMessage(body, response.statusCode),
+      );
+    }
+    final list = response.body.isNotEmpty
+        ? jsonDecode(response.body) as List<dynamic>
+        : <dynamic>[];
+    return list.cast<Map<String, dynamic>>();
   }
 
   static Future<void> deleteUser(String userId) async {

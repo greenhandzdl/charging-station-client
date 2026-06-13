@@ -78,7 +78,7 @@ void main() {
       final fields = find.byType(TextFormField);
       await tester.enterText(fields.at(0), 'Test User');
       await tester.enterText(fields.at(1), '13800138000');
-      await tester.enterText(fields.at(2), 'password123');
+      await tester.enterText(fields.at(2), 'Password123!');
       await tester.enterText(fields.at(3), 'different');
       await tester.enterText(fields.at(4), 'ABC1234');
       await tester.enterText(fields.at(5), '1234');
@@ -105,8 +105,8 @@ void main() {
       final fields = find.byType(TextFormField);
       await tester.enterText(fields.at(0), 'Test User');
       await tester.enterText(fields.at(1), '13800138000');
-      await tester.enterText(fields.at(2), 'password123');
-      await tester.enterText(fields.at(3), 'password123');
+      await tester.enterText(fields.at(2), 'Password123!');
+      await tester.enterText(fields.at(3), 'Password123!');
       await tester.enterText(fields.at(4), 'ABC1234');
       await tester.enterText(fields.at(5), '1234');
 
@@ -146,8 +146,8 @@ void main() {
       final fields = find.byType(TextFormField);
       await tester.enterText(fields.at(0), 'Test User');
       await tester.enterText(fields.at(1), '13800138000');
-      await tester.enterText(fields.at(2), 'password123');
-      await tester.enterText(fields.at(3), 'password123');
+      await tester.enterText(fields.at(2), 'Password123!');
+      await tester.enterText(fields.at(3), 'Password123!');
       await tester.enterText(fields.at(4), 'ABC1234');
       await tester.enterText(fields.at(5), 'wrong');
 

@@ -156,6 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return '请输入手机号';
                   if (v.trim().length != 11) return '手机号格式不正确';
+                  if (!RegExp(r'^1[3-9]\d{9}$').hasMatch(v.trim())) return '手机号格式不正确';
                   return null;
                 },
               ),
@@ -177,6 +178,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 validator: (v) {
                   if (v == null || v.isEmpty) return '请输入密码';
                   if (v.length < 8) return '密码至少8位';
+                  int categories = 0;
+                  if (v.contains(RegExp(r'[a-z]'))) categories++;
+                  if (v.contains(RegExp(r'[A-Z]'))) categories++;
+                  if (v.contains(RegExp(r'[0-9]'))) categories++;
+                  if (v.contains(RegExp(r'[@\$!%*#?&.]'))) categories++;
+                  // 特殊字符集需与后端一致: @\$!%*#?&.
+                  if (categories < 3) return '密码需包含大写字母、小写字母、数字、特殊字符中至少3类';
                   return null;
                 },
               ),

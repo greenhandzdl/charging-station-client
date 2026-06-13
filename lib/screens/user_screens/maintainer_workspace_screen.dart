@@ -499,25 +499,34 @@ class _MaintainerWorkspaceScreenState
               // Action button
               if (isPending || isInProgress) ...[
                 const Divider(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: isPending
-                      ? FilledButton.tonal(
-                          onPressed: () => _claimRepair(repair.id),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.orange.shade50,
-                            foregroundColor: Colors.orange.shade800,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _showDeleteConfirmDialog(repair.id),
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('删除'),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    ),
+                    const SizedBox(width: 8),
+                    isPending
+                        ? FilledButton.tonal(
+                            onPressed: () => _claimRepair(repair.id),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.orange.shade50,
+                              foregroundColor: Colors.orange.shade800,
+                            ),
+                            child: const Text('接单'),
+                          )
+                        : FilledButton.tonal(
+                            onPressed: () => _showCompleteConfirmDialog(repair.id),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.blue.shade50,
+                              foregroundColor: Colors.blue.shade800,
+                            ),
+                            child: const Text('标记完成'),
                           ),
-                          child: const Text('接单'),
-                        )
-                      : FilledButton.tonal(
-                          onPressed: () => _showCompleteConfirmDialog(repair.id),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.blue.shade50,
-                            foregroundColor: Colors.blue.shade800,
-                          ),
-                          child: const Text('标记完成'),
-                        ),
+                  ],
                 ),
               ],
             ],
@@ -590,6 +599,52 @@ class _MaintainerWorkspaceScreenState
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(String repairId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('确定申请删除此报修单？\n管理员审批后将被永久删除。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await context.read<RepairProvider>().softDeleteRepair(repairId);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('已申请删除，等待管理员审批'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('删除申请失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('确认删除'),
+          ),
+        ],
       ),
     );
   }

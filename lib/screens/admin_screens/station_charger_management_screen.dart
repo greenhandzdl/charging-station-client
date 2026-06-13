@@ -15,7 +15,9 @@ class _StationChargerManagementScreenState
     extends State<StationChargerManagementScreen> {
   List<StationModel> _stations = [];
   Map<String, List<ChargerModel>> _chargersMap = {};
+  Map<String, List<Map<String, dynamic>>> _chargerUsersMap = {}; // stationId -> [charger_users]
   bool _isLoading = false;
+  final Set<String> _loadingStations = {}; // prevent concurrent reload
   String _searchQuery = '';
   String? _expandedStationId;
   String? _editChargerDeviceType;
@@ -45,6 +47,8 @@ class _StationChargerManagementScreenState
   }
 
   Future<void> _loadChargers(String stationId) async {
+    if (_loadingStations.contains(stationId)) return;
+    _loadingStations.add(stationId);
     try {
       final chargers = await ApiService.getChargers(stationId);
       _chargersMap[stationId] = chargers;
@@ -55,6 +59,17 @@ class _StationChargerManagementScreenState
           SnackBar(content: Text('加载充电桩失败: $e')),
         );
       }
+    } finally {
+      _loadingStations.remove(stationId);
+    }
+  }
+
+  Future<void> _loadChargerUsers(String stationId) async {
+    try {
+      final users = await ApiService.getChargerUsers(stationId);
+      _chargerUsersMap[stationId] = users;
+    } catch (_) {
+      // charger_users 加载失败不阻塞 UI
     }
   }
 
@@ -62,10 +77,13 @@ class _StationChargerManagementScreenState
     if (_expandedStationId == stationId) {
       setState(() => _expandedStationId = null);
     } else {
-      setState(() => _expandedStationId = stationId);
-      if (!_chargersMap.containsKey(stationId)) {
-        _loadChargers(stationId);
-      }
+      setState(() {
+        _expandedStationId = stationId;
+        _chargersMap[stationId] = []; // 立即清空避免重复
+        _chargerUsersMap[stationId] = [];
+      });
+      _loadChargers(stationId);
+      _loadChargerUsers(stationId);
     }
   }
 
@@ -535,6 +553,47 @@ class _StationChargerManagementScreenState
     }
   }
 
+  Future<void> _resetChargerToken(ChargerModel charger) async {
+    try {
+      // 查找该充电桩对应的 charger_user
+      final users = _chargerUsersMap[charger.stationId] ?? [];
+      final cu = users.cast<Map<String, dynamic>?>().firstWhere(
+        (u) => u!['chargerId'] == charger.id,
+        orElse: () => null,
+      );
+      if (cu == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('未找到该充电桩的设备身份')),
+          );
+        }
+        return;
+      }
+      final result = await ApiService.resetChargerToken(cu['id']);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Token 已重置'),
+            content: SelectableText('${result['newToken']}'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('关闭'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('重置Token失败: $e')),
+        );
+      }
+    }
+  }
+
   // ---- Helpers ----
   Color _statusColor(String status) {
     switch (status.toUpperCase()) {
@@ -932,11 +991,12 @@ class _StationChargerManagementScreenState
           ],
         ),
         trailing: PopupMenuButton<String>(
-          onSelected: (v) {
+          onSelected: (v) async {
             final station = parentStation;
             if (station == null) return;
             if (v == 'edit') _showChargerForm(station, charger);
             if (v == 'delete') _deleteCharger(station, charger);
+            if (v == 'reset_token') _resetChargerToken(charger);
           },
           itemBuilder: (_) => [
             const PopupMenuItem(
@@ -944,6 +1004,15 @@ class _StationChargerManagementScreenState
               child: ListTile(
                 leading: Icon(Icons.edit, size: 20),
                 title: Text('编辑'),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'reset_token',
+              child: ListTile(
+                leading: Icon(Icons.refresh, size: 20, color: Colors.orange),
+                title: Text('重置Token', style: TextStyle(color: Colors.orange)),
                 dense: true,
                 contentPadding: EdgeInsets.zero,
               ),
