@@ -91,16 +91,9 @@ class _StationChargerManagementScreenState
   List<dynamic> _getDisplayItems() {
     final query = _searchQuery.toLowerCase().trim();
     if (query.isEmpty) {
-      // Browse mode: stations, followed by chargers if expanded
-      final items = <dynamic>[];
-      for (final station in _stations) {
-        items.add(station);
-        if (_expandedStationId == station.id) {
-          final chargers = _chargersMap[station.id] ?? [];
-          items.addAll(chargers);
-        }
-      }
-      return items;
+      // Browse mode: only return stations.
+      // Chargers are rendered as children inside _buildStationExpansionTile.
+      return _stations;
     } else {
       // Search mode: mixed flat list with type labels
       final items = <dynamic>[];
@@ -553,29 +546,70 @@ class _StationChargerManagementScreenState
     }
   }
 
-  Future<void> _resetChargerToken(ChargerModel charger) async {
+  Future<void> _resetChargerToken(
+      {ChargerModel? charger, StationModel? station}) async {
     try {
-      // 查找该充电桩对应的 charger_user
-      final users = _chargerUsersMap[charger.stationId] ?? [];
-      final cu = users.cast<Map<String, dynamic>?>().firstWhere(
-        (u) => u!['chargerId'] == charger.id,
-        orElse: () => null,
-      );
+      final stationId = charger?.stationId ?? station?.id;
+      if (stationId == null) return;
+
+      // Ensure charger users are loaded for this station
+      if (!_chargerUsersMap.containsKey(stationId) ||
+          (_chargerUsersMap[stationId]?.isEmpty ?? true)) {
+        await _loadChargerUsers(stationId);
+      }
+
+      final users = _chargerUsersMap[stationId] ?? [];
+      Map<String, dynamic>? cu;
+
+      if (charger != null) {
+        // Find specific charger user
+        cu = users.cast<Map<String, dynamic>?>().firstWhere(
+              (u) => u!['chargerId'] == charger.id,
+              orElse: () => null,
+            );
+      } else if (station != null) {
+        // Find station-level user (permissionLevel == 'STATION')
+        cu = users.cast<Map<String, dynamic>?>().firstWhere(
+              (u) =>
+                  u!['stationId'] == station.id &&
+                  u['permissionLevel'] == 'STATION',
+              orElse: () => null,
+            );
+      }
+
       if (cu == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('未找到该充电桩的设备身份')),
+            SnackBar(
+                content: Text(charger != null
+                    ? '未找到该充电桩的设备身份'
+                    : '未找到该充电站的设备身份')),
           );
         }
         return;
       }
+
       final result = await ApiService.resetChargerToken(cu['id']);
       if (mounted) {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Token 已重置'),
-            content: SelectableText('${result['newToken']}'),
+            title: Text(charger != null ? '充电桩 Token 已重置' : '充电站 Token 已重置'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('名称: ${cu!['name']}'),
+                const SizedBox(height: 8),
+                const Text('新 Token (请复制保存):'),
+                const SizedBox(height: 4),
+                SelectableText(
+                  '${result['newToken']}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.blue),
+                ),
+              ],
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -794,6 +828,7 @@ class _StationChargerManagementScreenState
               onSelected: (v) {
                 if (v == 'edit') _showStationForm(station);
                 if (v == 'delete') _deleteStation(station);
+                if (v == 'reset_token') _resetChargerToken(station: station);
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(
@@ -806,12 +841,20 @@ class _StationChargerManagementScreenState
                   ),
                 ),
                 const PopupMenuItem(
+                  value: 'reset_token',
+                  child: ListTile(
+                    leading: Icon(Icons.refresh, size: 20, color: Colors.orange),
+                    title:
+                        Text('重置Token', style: TextStyle(color: Colors.orange)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
-                    leading:
-                        Icon(Icons.delete, size: 20, color: Colors.red),
-                    title:
-                        Text('删除', style: TextStyle(color: Colors.red)),
+                    leading: Icon(Icons.delete, size: 20, color: Colors.red),
+                    title: Text('删除', style: TextStyle(color: Colors.red)),
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -888,6 +931,7 @@ class _StationChargerManagementScreenState
           onSelected: (v) {
             if (v == 'edit') _showStationForm(station);
             if (v == 'delete') _deleteStation(station);
+            if (v == 'reset_token') _resetChargerToken(station: station);
           },
           itemBuilder: (_) => [
             const PopupMenuItem(
@@ -900,12 +944,19 @@ class _StationChargerManagementScreenState
               ),
             ),
             const PopupMenuItem(
+              value: 'reset_token',
+              child: ListTile(
+                leading: Icon(Icons.refresh, size: 20, color: Colors.orange),
+                title: Text('重置Token', style: TextStyle(color: Colors.orange)),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const PopupMenuItem(
               value: 'delete',
               child: ListTile(
-                leading:
-                    Icon(Icons.delete, size: 20, color: Colors.red),
-                title:
-                    Text('删除', style: TextStyle(color: Colors.red)),
+                leading: Icon(Icons.delete, size: 20, color: Colors.red),
+                title: Text('删除', style: TextStyle(color: Colors.red)),
                 dense: true,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -996,7 +1047,7 @@ class _StationChargerManagementScreenState
             if (station == null) return;
             if (v == 'edit') _showChargerForm(station, charger);
             if (v == 'delete') _deleteCharger(station, charger);
-            if (v == 'reset_token') _resetChargerToken(charger);
+            if (v == 'reset_token') _resetChargerToken(charger: charger);
           },
           itemBuilder: (_) => [
             const PopupMenuItem(

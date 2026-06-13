@@ -29,18 +29,24 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
       switch (action) {
         case RepairAction.assign:
           await provider.assignRepair(repairId, maintainerId ?? '');
+          break;
         case RepairAction.resolve:
           await provider.resolveRepair(repairId);
+          break;
         case RepairAction.close:
           await provider.closeRepair(repairId);
+          break;
         case RepairAction.reject:
           if (reason != null) {
             await provider.rejectRepair(repairId, reason);
           }
+          break;
         case RepairAction.softDelete:
           await provider.softDeleteRepair(repairId);
+          break;
         case RepairAction.approveDelete:
           await provider.approveDeleteRepair(repairId);
+          break;
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -144,20 +144,50 @@ class ChargingProvider extends ChangeNotifier {
     try {
       final result = await ApiService.getActiveCharges();
       final activeRecords = result['activeRecords'] as List<dynamic>? ?? [];
+
+      bool hasChanges = false;
       for (final r in activeRecords) {
         if (r is Map<String, dynamic>) {
           final startTimeStr = r['startTime'] as String?;
           if (startTimeStr == null) continue;
+
+          final recordId = r['recordId']?.toString() ?? '';
+          final chargerId = r['chargerId']?.toString() ?? '';
+
+          // 避免重复添加
+          if (_activeSimulations.any((s) => s.recordId == recordId)) continue;
+
           final sim = LocalChargeSimulation(
-            recordId: r['recordId']?.toString() ?? '',
-            chargerId: r['chargerId']?.toString() ?? '',
+            recordId: recordId,
+            chargerId: chargerId,
             chargerCode: r['chargerCode']?.toString() ?? '',
             type: r['type']?.toString() ?? 'FAST',
             ratedPowerKw: (r['ratedPowerKw'] as num?)?.toDouble() ?? 60.0,
             startTime: DateTime.parse(startTimeStr),
           );
-          startLocalSimulation(sim);
+
+          _activeSimulations.add(sim);
+          hasChanges = true;
+
+          // 如果没有 currentRecord，则恢复第一个活跃记录作为当前记录
+          if (_currentRecord == null) {
+            _currentRecord = ChargeRecordModel(
+              id: recordId,
+              status: 'PROCESSING',
+              deductionStatus: 'pending',
+              energyKwh: sim.energyKwh,
+              fee: sim.fee,
+              startTime: startTimeStr,
+              endTime: '',
+              chargerCode: sim.chargerCode,
+            );
+          }
         }
+      }
+
+      if (hasChanges) {
+        _startSimulationTicks();
+        notifyListeners();
       }
 
       // 检查离线通知
@@ -166,8 +196,8 @@ class ChargingProvider extends ChangeNotifier {
         _offlineStopInfo = result['offlineInfo'] as Map<String, dynamic>?;
         notifyListeners();
       }
-    } catch (_) {
-      // 恢复失败不阻塞 UI
+    } catch (e) {
+      debugPrint('resumeFromBackend failed: $e');
     }
   }
 
