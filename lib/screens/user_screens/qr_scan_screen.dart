@@ -137,12 +137,12 @@ class _QrScanScreenState extends State<QrScanScreen> {
         MobileScanner(
           controller: scanner,
           onDetect: _onDetect,
-          errorBuilder: (context, error, child) {
+          errorBuilder: (context, error) {
             // Camera not available — show fallback
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) setState(() => _cameraError = true);
             });
-            return child ?? const SizedBox.shrink();
+            return const SizedBox.shrink();
           },
         ),
         // Scan overlay guide

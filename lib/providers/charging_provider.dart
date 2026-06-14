@@ -70,6 +70,7 @@ class ChargingProvider extends ChangeNotifier {
   List<LocalChargeSimulation> _activeSimulations = [];
 
   Timer? _pollTimer;
+  Timer? _activeCheckTimer;
   bool _isPolling = false;
 
   List<StationModel> get stations => _stations;
@@ -98,6 +99,8 @@ class ChargingProvider extends ChangeNotifier {
     _activeSimulations = [];
     _offlineStopInfo = null;
     stopPolling();
+    _activeCheckTimer?.cancel();
+    _activeCheckTimer = null;
     stopLocalSimulation();
     notifyListeners();
   }
@@ -142,8 +145,15 @@ class ChargingProvider extends ChangeNotifier {
   /// 登录后从后端恢复活跃充电记录（调用 GET /charges/active）
   Future<void> resumeFromBackend() async {
     try {
+      debugPrint('resumeFromBackend: Starting to fetch active charges...');
+      
+      // 添加短暂延迟，确保 token 刷新完全生效
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       final result = await ApiService.getActiveCharges();
       final activeRecords = result['activeRecords'] as List<dynamic>? ?? [];
+
+      debugPrint('resumeFromBackend: Fetched ${activeRecords.length} active records');
 
       bool hasChanges = false;
       for (final r in activeRecords) {
@@ -190,14 +200,23 @@ class ChargingProvider extends ChangeNotifier {
         notifyListeners();
       }
 
+      // 无论有无恢复记录，都启动周期检查（防止拔枪/离线导致的状态不一致）
+      if (_activeSimulations.isNotEmpty) {
+        _startPeriodicActiveCheck();
+      }
+
       // 检查离线通知
       final offlineStopped = result['offlineStopped'] as bool? ?? false;
       if (offlineStopped) {
         _offlineStopInfo = result['offlineInfo'] as Map<String, dynamic>?;
         notifyListeners();
       }
-    } catch (e) {
+      
+      debugPrint('resumeFromBackend: Completed successfully');
+    } catch (e, stackTrace) {
       debugPrint('resumeFromBackend failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+      // 不抛出异常，允许应用继续运行
     }
   }
 
@@ -208,6 +227,46 @@ class ChargingProvider extends ChangeNotifier {
   void clearOfflineStopInfo() {
     _offlineStopInfo = null;
     notifyListeners();
+  }
+
+  /// 定时轮询 GET /charges/active，当后端拔枪/离线结束充电时，自动停止本地模拟。
+  void _startPeriodicActiveCheck() {
+    _activeCheckTimer?.cancel();
+
+    Future<void> check() async {
+      if (_activeSimulations.isEmpty) {
+        _activeCheckTimer?.cancel();
+        _activeCheckTimer = null;
+        return;
+      }
+      try {
+        final result = await ApiService.getActiveCharges();
+        final activeRecords = result['activeRecords'] as List<dynamic>? ?? [];
+        final backendRecordIds = activeRecords
+            .map((r) => (r as Map<String, dynamic>)['recordId']?.toString())
+            .whereType<String>()
+            .toSet();
+
+        for (final sim in _activeSimulations.toList()) {
+          if (!backendRecordIds.contains(sim.recordId)) {
+            stopLocalSimulationForRecord(sim.recordId);
+            debugPrint('ActiveCheck: stopped simulation for ${sim.recordId} (no longer active on backend)');
+          }
+        }
+
+        final offlineStopped = result['offlineStopped'] as bool? ?? false;
+        if (offlineStopped) {
+          _offlineStopInfo = result['offlineInfo'] as Map<String, dynamic>?;
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('ActiveCheck failed: $e');
+      }
+    }
+
+    // 立即执行一次，然后每 5 秒轮询
+    check();
+    _activeCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) => check());
   }
 
   /// 开始轮询充电状态，每 5 秒查询一次当前记录
@@ -286,6 +345,7 @@ class ChargingProvider extends ChangeNotifier {
       startLocalSimulation(sim);
       notifyListeners();
       startPolling();
+      _startPeriodicActiveCheck();
     } catch (e) {
       rethrow;
     }
@@ -305,6 +365,7 @@ class ChargingProvider extends ChangeNotifier {
   @override
   void dispose() {
     stopPolling();
+    _activeCheckTimer?.cancel();
     stopLocalSimulation();
     super.dispose();
   }

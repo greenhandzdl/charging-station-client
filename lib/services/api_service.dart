@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/models.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8080/api/v1';
+  // static const String baseUrl = 'http://localhost:8080/api/v1';
+  static const String baseUrl =
+      'https://backend-charging-station.greenhandzdl.moe/api/v1';
 
   /// Test hook: set a mock HTTP client. When non-null, all HTTP calls go
   /// through this client instead of the default top-level http functions.
@@ -14,11 +17,12 @@ class ApiService {
   static void setAccessToken(String? token) {
     _accessToken = token;
   }
+  
+  /// Test hook: get current access token (for debugging)
+  static String? get testAccessToken => _accessToken;
 
   static Map<String, String> _headers({bool withAuth = true}) {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
     if (withAuth && _accessToken != null) {
       headers['Authorization'] = 'Bearer $_accessToken';
     }
@@ -26,10 +30,7 @@ class ApiService {
   }
 
   /// Send an HTTP GET request, using [testClient] if set.
-  static Future<http.Response> _get(
-    Uri url, {
-    Map<String, String>? headers,
-  }) {
+  static Future<http.Response> _get(Uri url, {Map<String, String>? headers}) {
     if (testClient != null) {
       return testClient!.get(url, headers: headers);
     }
@@ -72,7 +73,10 @@ class ApiService {
   }
 
   /// Extract error message from backend response.
-  static String _extractErrorMessage(Map<String, dynamic> body, int statusCode) {
+  static String _extractErrorMessage(
+    Map<String, dynamic> body,
+    int statusCode,
+  ) {
     final error = body['error'];
     if (error is Map<String, dynamic>) {
       final msg = error['message'] as String?;
@@ -85,7 +89,8 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> _handleResponse(
-      http.Response response) async {
+    http.Response response,
+  ) async {
     final body = response.body.isNotEmpty
         ? jsonDecode(response.body) as Map<String, dynamic>
         : <String, dynamic>{};
@@ -100,7 +105,10 @@ class ApiService {
 
   /// Helper: parse error from the response body for GET-list endpoints.
   /// Returns the parsed JSON body if successful.
-  static Map<String, dynamic> _checkForError(http.Response response, String fallbackMsg) {
+  static Map<String, dynamic> _checkForError(
+    http.Response response,
+    String fallbackMsg,
+  ) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = response.body.isNotEmpty
           ? jsonDecode(response.body) as Map<String, dynamic>
@@ -114,12 +122,13 @@ class ApiService {
   }
 
   // ---- Auth ----
-  static Future<LoginResponse> login(String phone, String password,
-      {String? captchaId, String? captchaCode}) async {
-    final body = <String, dynamic>{
-      'phone': phone,
-      'password': password,
-    };
+  static Future<LoginResponse> login(
+    String phone,
+    String password, {
+    String? captchaId,
+    String? captchaCode,
+  }) async {
+    final body = <String, dynamic>{'phone': phone, 'password': password};
     if (captchaId != null) body['captchaId'] = captchaId;
     if (captchaCode != null) body['captchaCode'] = captchaCode;
 
@@ -179,8 +188,7 @@ class ApiService {
   }
 
   // ---- Password ----
-  static Future<void> changePassword(
-      String oldPwd, String newPwd) async {
+  static Future<void> changePassword(String oldPwd, String newPwd) async {
     final response = await _put(
       Uri.parse('$baseUrl/auth/password'),
       headers: _headers(),
@@ -249,7 +257,9 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> forceStop(
-      String recordId, String reason) async {
+    String recordId,
+    String reason,
+  ) async {
     final response = await _post(
       Uri.parse('$baseUrl/charges/$recordId/force-stop'),
       headers: _headers(),
@@ -259,7 +269,9 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> selectCharger(
-      String chargerId, String sessionId) async {
+    String chargerId,
+    String sessionId,
+  ) async {
     final response = await _post(
       Uri.parse('$baseUrl/chargers/$chargerId/select'),
       headers: _headers(),
@@ -288,10 +300,15 @@ class ApiService {
 
   /// 获取用户当前活跃的充电记录 + 离线通知标记（用于本地模拟恢复）
   static Future<Map<String, dynamic>> getActiveCharges() async {
+    debugPrint('ApiService.getActiveCharges: accessToken=${_accessToken != null ? "exists (${_accessToken!.substring(0, 20)}...)" : "null"}');
+    
     final response = await _get(
       Uri.parse('$baseUrl/charges/active'),
       headers: _headers(),
     );
+    
+    debugPrint('ApiService.getActiveCharges: response statusCode=${response.statusCode}');
+    
     return await _handleResponse(response);
   }
 
@@ -305,8 +322,7 @@ class ApiService {
         ? jsonDecode(response.body) as List<dynamic>
         : <dynamic>[];
     return list
-        .map((e) =>
-            ChargeRecordModel.fromJson(e as Map<String, dynamic>))
+        .map((e) => ChargeRecordModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
@@ -374,8 +390,7 @@ class ApiService {
         .toList();
   }
 
-  static Future<StationModel> createStation(
-      Map<String, dynamic> data) async {
+  static Future<StationModel> createStation(Map<String, dynamic> data) async {
     final response = await _post(
       Uri.parse('$baseUrl/stations'),
       headers: _headers(),
@@ -386,7 +401,9 @@ class ApiService {
   }
 
   static Future<StationModel> updateStation(
-      String id, Map<String, dynamic> data) async {
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await _put(
       Uri.parse('$baseUrl/stations/$id'),
       headers: _headers(),
@@ -427,8 +444,7 @@ class ApiService {
         .toList();
   }
 
-  static Future<ChargerModel> createCharger(
-      Map<String, dynamic> data) async {
+  static Future<ChargerModel> createCharger(Map<String, dynamic> data) async {
     final response = await _post(
       Uri.parse('$baseUrl/chargers'),
       headers: _headers(),
@@ -439,7 +455,9 @@ class ApiService {
   }
 
   static Future<ChargerModel> updateCharger(
-      String id, Map<String, dynamic> data) async {
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await _put(
       Uri.parse('$baseUrl/chargers/$id'),
       headers: _headers(),
@@ -508,9 +526,34 @@ class ApiService {
         .toList();
   }
 
+  // ---- Deductions (Auto-deduct records) ----
+  static Future<List<PaymentModel>> getDeductions() async {
+    final response = await _get(
+      Uri.parse('$baseUrl/payments/deductions'),
+      headers: _headers(),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _extractErrorMessage(body, response.statusCode),
+      );
+    }
+    final list = response.body.isNotEmpty
+        ? jsonDecode(response.body) as List<dynamic>
+        : <dynamic>[];
+    return list
+        .map((e) => PaymentModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   // ---- Repairs ----
   static Future<RepairModel> submitRepair(
-      String chargerId, String description) async {
+    String chargerId,
+    String description,
+  ) async {
     final response = await _post(
       Uri.parse('$baseUrl/repairs'),
       headers: _headers(),
@@ -542,8 +585,7 @@ class ApiService {
         .toList();
   }
 
-  static Future<void> assignRepair(
-      String repairId, String maintainerId) async {
+  static Future<void> assignRepair(String repairId, String maintainerId) async {
     final response = await _put(
       Uri.parse('$baseUrl/repairs/$repairId/assign'),
       headers: _headers(),
@@ -576,8 +618,7 @@ class ApiService {
     await _handleResponse(response);
   }
 
-  static Future<void> rejectRepair(
-      String repairId, String reason) async {
+  static Future<void> rejectRepair(String repairId, String reason) async {
     final response = await _put(
       Uri.parse('$baseUrl/repairs/$repairId/reject'),
       headers: _headers(),
@@ -671,16 +712,13 @@ class ApiService {
     return list.cast<Map<String, dynamic>>();
   }
 
-  static Future<void> exportCsv(
-      String type, Map<String, String> params) async {
-    final uri = Uri.parse('$baseUrl/analytics/export')
-        .replace(queryParameters: {'type': type, ...params});
+  static Future<void> exportCsv(String type, Map<String, String> params) async {
+    final uri = Uri.parse(
+      '$baseUrl/analytics/export',
+    ).replace(queryParameters: {'type': type, ...params});
     final response = await _get(uri, headers: _headers());
     if (response.statusCode >= 300) {
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: '导出失败',
-      );
+      throw ApiException(statusCode: response.statusCode, message: '导出失败');
     }
   }
 
@@ -715,7 +753,10 @@ class ApiService {
     await _handleResponse(response);
   }
 
-  static Future<void> rejectPayment(String paymentId, {String reason = '管理员拒绝'}) async {
+  static Future<void> rejectPayment(
+    String paymentId, {
+    String reason = '管理员拒绝',
+  }) async {
     final response = await _put(
       Uri.parse('$baseUrl/payments/$paymentId/reject'),
       headers: _headers(),
@@ -735,8 +776,7 @@ class ApiService {
   }
 
   // ---- User Management (Admin) ----
-  static Future<void> changeRole(
-      String userId, String newRole) async {
+  static Future<void> changeRole(String userId, String newRole) async {
     final response = await _put(
       Uri.parse('$baseUrl/users/$userId/role'),
       headers: _headers(),
@@ -746,7 +786,9 @@ class ApiService {
   }
 
   // ---- Charger User Management ----
-  static Future<Map<String, dynamic>> resetChargerToken(String targetUserId) async {
+  static Future<Map<String, dynamic>> resetChargerToken(
+    String targetUserId,
+  ) async {
     final response = await _post(
       Uri.parse('$baseUrl/auth/charger-reset-token/$targetUserId'),
       headers: _headers(),
@@ -754,7 +796,9 @@ class ApiService {
     return await _handleResponse(response);
   }
 
-  static Future<List<Map<String, dynamic>>> getChargerUsers(String? stationId) async {
+  static Future<List<Map<String, dynamic>>> getChargerUsers(
+    String? stationId,
+  ) async {
     final query = stationId != null ? '?stationId=$stationId' : '';
     final response = await _get(
       Uri.parse('$baseUrl/auth/charger-users$query'),
@@ -784,7 +828,9 @@ class ApiService {
   }
 
   static Future<void> updateUser(
-      String userId, Map<String, dynamic> data) async {
+    String userId,
+    Map<String, dynamic> data,
+  ) async {
     final response = await _put(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers(),

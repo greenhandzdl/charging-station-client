@@ -303,7 +303,7 @@ class _RepairManagementScreenState extends State<RepairManagementScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('确认删除'),
-        content: const Text('确定要删除此报修记录吗？将进入待审批状态。'),
+        content: const Text('确定要删除此报修记录吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
