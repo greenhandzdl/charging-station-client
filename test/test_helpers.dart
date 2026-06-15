@@ -201,7 +201,7 @@ class MockAuthProvider extends AuthProvider {
   }
 
   @override
-  void logout() {
+  Future<void> logout() async {
     _isLoggedIn = false;
     _user = null;
     notifyListeners();

@@ -28,7 +28,7 @@ void main() {
     group('login', () {
       test('builds correct URL and body', () async {
         ApiService.testClient = MockClient((request) async {
-          expect(request.url.toString(), 'http://localhost:8080/api/v1/auth/login');
+          expect(request.url.toString(), 'https://backend-charging-station.greenhandzdl.moe/api/v1/auth/login');
           expect(request.method, 'POST');
 
           final body = jsonDecode(request.body!) as Map<String, dynamic>;
@@ -94,7 +94,7 @@ void main() {
     group('register', () {
       test('sends correct fields', () async {
         ApiService.testClient = MockClient((request) async {
-          expect(request.url.toString(), 'http://localhost:8080/api/v1/auth/register');
+          expect(request.url.toString(), 'https://backend-charging-station.greenhandzdl.moe/api/v1/auth/register');
           final body = jsonDecode(request.body!) as Map<String, dynamic>;
           expect(body['name'], 'Test User');
           expect(body['phone'], '13800138000');
@@ -200,7 +200,7 @@ void main() {
     group('repairs', () {
       test('submitRepair sends correct data', () async {
         ApiService.testClient = MockClient((request) async {
-          expect(request.url.toString(), 'http://localhost:8080/api/v1/repairs');
+          expect(request.url.toString(), 'https://backend-charging-station.greenhandzdl.moe/api/v1/repairs');
           final body = jsonDecode(request.body!) as Map<String, dynamic>;
           expect(body['chargerId'], 'charger1');
           expect(body['description'], 'fault description');
